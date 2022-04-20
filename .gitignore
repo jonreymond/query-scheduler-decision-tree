@@ -56,3 +56,6 @@ project/plugins/project/
 /project/target/streams/
 /project/target/streams/$global/update/$global/
 /project/target/streams/$global/update/$global/streams/
+
+#Ressources
+src/main/resources
