@@ -32,7 +32,7 @@ package object imdb {
     "person_info"
   )
 
-  val DICT = (0 until NAMES.length).map(i => NAMES(i) -> i)
+  val DICT = (0 until NAMES.length).map(i => NAMES(i) -> i).toMap
   abstract sealed class Record extends Product with Serializable
   case class Undefined() extends Record
   case class Aka_name (
