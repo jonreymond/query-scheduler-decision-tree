@@ -36,15 +36,15 @@ object Main {
 //    sc.stop()
 
 
-    val num_core_l = List(4)
-    val numPartitions_l = List(8)
+    val num_core_l = List(1)
+    val numPartitions_l = List(1)
     val num_measurements = 1
     val q_list = List(
-      "q1"//,
-//      "q2",//buggy
+//      "q1",
+      "q2"//,//TODO :buggy
 //      "q3",
 //      "q4",
-//      "q5"//buggy
+//      "q5"//TODO: buggy
       )
 
 

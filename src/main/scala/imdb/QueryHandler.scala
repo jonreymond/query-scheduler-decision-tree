@@ -70,12 +70,23 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
         // t.id = mc.movie_id -> t.title
         val join2 = join1.join(t_f).map(x => x._1 -> x._2._2)
         // t.id = mc.movie_id = mk.movie_id -> (t.title, mk.word_id)
-        val join3 = join2.join(mk_f)
-        val table_res = join3.join(k_f).map(x => x._2._1._1)
+        val join3 = join2.join(mk_f).map(x => x._2._2 -> x._2._1)
+        val table_res = join3.join(k_f).map(x => x._2._1)
+//
+        val res = table_res.reduce(min_s)
 
-        val res = table_res.reduce(min_s(_,_))
         List(res)
   }
+//  val res = List("cn_f :" + cn_f.count(),
+//    "k_f :" + k_f.count(),
+//    "mc_f :" + mc_f.count(),
+//    "mk_f :" + mk_f.count(),
+//    "t_f :" + t_f.count(),
+//    "join1 :" + join1.count(),
+//    "join2 :" + join2.count(),
+//    "join3 :" + join3.count(),
+//    "tableres :" + table_res.count()
+//  )
 
   def q3(): List[Any] = {
     val k_f = k.filter(_.word.contains("sequel")).map(_.id -> false)
@@ -132,7 +143,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
         val join1 = mi_it_j.join(mc_ct_j).map(_._1 -> false)
 
         val res_table = t_f.join(join1).map(_._2._1)
-        val res = res_table.reduce(min_s(_,_))
+        val res = res_table.reduce(min_s)
 
         List(res)
   }
