@@ -9,10 +9,14 @@ abstract class Query(sc: SparkContext, numPartitions: Int) {
 
 
 class Q3(sc: SparkContext, numPartitions: Int) extends Query(sc: SparkContext, numPartitions: Int) {
-  var k: RDD[Keyword] = load(sc, "keyword", numPartitions).asInstanceOf[RDD[Keyword]]
-  var mi: RDD[Movie_info] = load(sc, "movie_info", numPartitions).asInstanceOf[RDD[Movie_info]]
-  var mk: RDD[Movie_keyword] = load(sc, "movie_keyword", numPartitions).asInstanceOf[RDD[Movie_keyword]]
-  var t: RDD[Title] = load(sc, "title", numPartitions).asInstanceOf[RDD[Title]]
+  var k: RDD[Keyword] = load(sc, "keyword", numPartitions).asInstanceOf[RDD[Keyword]].persist()
+  var mi: RDD[Movie_info] = load(sc, "movie_info", numPartitions).asInstanceOf[RDD[Movie_info]].persist()
+  var mk: RDD[Movie_keyword] = load(sc, "movie_keyword", numPartitions).asInstanceOf[RDD[Movie_keyword]].persist()
+  var t: RDD[Title] = load(sc, "title", numPartitions).asInstanceOf[RDD[Title]].persist()
+  k.takeSample(withReplacement = false,2).toList
+  mi.takeSample(withReplacement = false,2).toList
+  mk.takeSample(withReplacement = false,2).toList
+  t.takeSample(withReplacement = false,2).toList
 
   override def repartition(numPartitions: Int): Unit = {
     k = k.repartition(numPartitions)

@@ -27,40 +27,75 @@ object Main {
     val date = new DateTime()
     println(date.toString())
 //
-//    val conf = new SparkConf().setAppName("app").setMaster("local[1]")
-//    val sc = SparkContext.getOrCreate(conf)
-//    val q3 = new Q3(sc, 4)
+    val all_names = List(
+      "aka_name",
+      "aka_title",
+      "cast_info",
+      "char_name",
+      "comp_cast_type",
+      "company_name",
+      "company_type",
+      "complete_cast",
+      "info_type",
+      "keyword",
+      "kind_type",
+      "link_type",
+      "movie_companies",
+      "movie_info_idx",
+      "movie_keyword",
+      "movie_link",
+      "name",
+      "role_type",
+      "title",
+      "movie_info",
+      "person_info"
+    )
+//    val ind = (0 until all_names.length).map(i => all_names(i) -> i)
+    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
+    val sc = SparkContext.getOrCreate(conf)
+//
+    val rdd_list = all_names.map(load(sc,_)).map(_.persist())
+    rdd_list.foreach(x => println(x.count()))
+
+//    println(rdd_list(0).asInstanceOf[RDD[Aka_title]].takeSample(withReplacement = false,2).toList)
+//val path = getPath("cast_info", "imdb")
+//    val file = sc.textFile(path).persist()
+//    val res1 =file.map(x => if(x.contains('"'))1 else 0).reduce(_+_)
+//    println(res1)
+//    println(file.count())
+//    val aka =
+//    val q3 = new Q3(sc, 2)
 //    q3.execute()
-//    sc.stop()
+    sc.stop()
 
     println("ici")
-    val num_core_l = List(2,4)
-    val numPartitions_l = List(4, 8)
-    val num_measurements = 1
+//    val num_core_l = List(2)
+//    val numPartitions_l = List(4, 8)
+//    val num_measurements = 1
 //
 //
-    val f = new File( STORE_PATH+ "q3_test2.csv" )
-    val writer = CSVWriter.open(f) //append = true check
-    writer.writeRow(List("num_cores") ++ numPartitions_l)
-
-    num_core_l.foreach { num_core =>
-
-      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
-      val sc = SparkContext.getOrCreate(conf)
-      val q3 = new Q3(sc, 4)
-      val results = numPartitions_l.map{numPartitions =>
-            q3.repartition(numPartitions)
-            val measurements = (1 to num_measurements).map(_ => timingInMs(q3.execute))
-            val avg_timing = measurements.map(t => t._2).sum / num_measurements
-
-            println("num_core : " + num_core + " num_partitions : " + numPartitions + " ")
-            Thread.sleep(1000)
-            avg_timing
-        }
-      writer.writeRow(List(num_core) ++ results)
-      sc.stop()
-    }
-    writer.close()
+//    val f = new File( STORE_PATH+ "q3_test2.csv" )
+//    val writer = CSVWriter.open(f) //append = true check
+//    writer.writeRow(List("num_cores") ++ numPartitions_l)
+//
+//    num_core_l.foreach { num_core =>
+//
+//      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
+//      val sc = SparkContext.getOrCreate(conf)
+//      val q3 = new Q3(sc, 4)
+//      val results = numPartitions_l.map{numPartitions =>
+//            q3.repartition(numPartitions)
+//            val measurements = (1 to num_measurements).map(_ => timingInMs(q3.execute))
+//            val avg_timing = measurements.map(t => t._2).sum / num_measurements
+//
+//            println("num_core : " + num_core + " num_partitions : " + numPartitions + " ")
+//            Thread.sleep(1000)
+//            avg_timing
+//        }
+//      writer.writeRow(List(num_core) ++ results)
+//      sc.stop()
+//    }
+//    writer.close()
 //    val s_num_core = "local[" + 2.toString + "]"
 //    println(s_num_core)
 //    sparkSession.stop()
