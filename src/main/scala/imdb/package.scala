@@ -7,6 +7,32 @@ import java.io.File
 
 package object imdb {
   val STORE_PATH = "src/main/resources/results/"
+
+  val NAMES = List(
+    "aka_name",
+    "aka_title",
+    "cast_info",
+    "char_name",
+    "comp_cast_type",
+    "company_name",
+    "company_type",
+    "complete_cast",
+    "info_type",
+    "keyword",
+    "kind_type",
+    "link_type",
+    "movie_companies",
+    "movie_info_idx",
+    "movie_keyword",
+    "movie_link",
+    "name",
+    "role_type",
+    "title",
+    "movie_info",
+    "person_info"
+  )
+
+  val DICT = (0 until NAMES.length).map(i => NAMES(i) -> i)
   abstract sealed class Record extends Product with Serializable
   case class Undefined() extends Record
   case class Aka_name (
@@ -244,9 +270,6 @@ def timingInMs(f : ()=>List[Any]) : (List[Any], Double) = {
     }
 
   }
-//private def get_char_name(cols : Array[String]): Option[Record] ={
-//
-//}
 
   private def get_aka_title(cols : Array[String]): Option[Record] ={
     if (cols(0).isEmpty || cols(1).isEmpty || cols(4).isEmpty)
@@ -293,61 +316,13 @@ def timingInMs(f : ()=>List[Any]) : (List[Any], Double) = {
     }
   }
 
-  private def get_default_record(name : String): Record = {
-//    name match {
-//        case "aka_name" =>Aka_name(-1, -1,"","","","","","")
-//      case "aka_title" =>Aka_title( -1, -1, "", "", -1, -1, "", -1, -1, -1, "", "")
-//      case "cast_info" =>Cast_info(-1, -1,-1,-1,"",-1,-1)
-//      case "char_name" => Char_name(-1, "", "", -1 ,"" ,"" ,"")
-//      case "comp_cast_type" => Comp_cast_type(-1, "")
-//      case "company_name" =>Company_name(-1, "", "", -1, "", "", "")
-//      case "company_type" =>Company_type(-1, "")
-//      case "complete_cast" =>Complete_cast(-1, -1, -1, -1)
-//      case "info_type" =>Info_type(-1, "")
-//      case "keyword" =>Keyword(-1, "", "")
-//      case "kind_type" =>Kind_type(-1, "")
-//      case "link_type" =>Link_type(-1, "")
-//      case "movie_companies" =>Movie_companies(-1, -1, -1, -1, "")
-//      case "movie_info_idx" =>Movie_info_idx(-1, -1, -1, "", "")
-//      case "movie_keyword" => Movie_keyword(-1, -1, -1)
-//      case "movie_link" =>Movie_link(-1, -1, -1, -1)
-//      case "name" =>Name(-1, "", "", -1, "", "", "", "", "")
-//      case "role_type" => Role_type(-1, "")
-//      case "title" =>Title(-1, "", "", -1, -1, -1, "", -1, -1, -1, "", "")
-//      case "movie_info" =>Movie_info(-1, -1, -1, "", "")
-//      case "person_info" =>Person_info(-1, -1, -1, "", "")
-//        case _ => Undefined()
-//    }
-    Undefined()
-  }
+
   def getPath(name: String, folder: String): String = {
     new File(getClass.getResource("/" + folder + "/" + name +".csv").getFile).getPath
   }
   def load(sc : SparkContext, name : String, numPartitions: Int): org.apache.spark.rdd.RDD[Record] = {
-//    val session = SparkSession.builder.config(sc.getConf).getOrCreate()
-//    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-//    val df = sqlContext.read
-//      .format(getPath(name, "imdb"))
-//      .option("header", false)
-//      .load(("~/test.csv")
-//val df = sqlContext.read
-//  .format("com.databricks.spark.csv")
-//  .option("header", "false") // Use first line of all files as header
-//  .option("inferSchema", "true") // Automatically infer data types
-//  .option("quote", "\"")  //escape the quotes
-//  .option("ignoreLeadingWhiteSpace", true)  // escape space before your data
-//  .load(getPath(name, "imdb"))
-//   val test =  df.rdd.map(x => x. Aka_title(x.getInt(0), x.getInt(1), x.getString(2),
-//     x.getString(3),x.getInt(4),x.getInt(5),x.getString(6),x.getInt(7),
-//     x.getInt(8),x.getInt(9),x.getString(10),x.getString(11)))
-//    val personEncoder = Encoders.bean(Aka_title.getClass)
-//    val res = df.as(personEncoder)
-//    val res = df.as(personEncoder).rdd.asInstanceOf[RDD[Record]]
-//    test.asInstanceOf[RDD[Record]]
-//df.rdd.map(x => x.asInstanceOf(Aka_title))
     load(sc, name).repartition(numPartitions)
   }
-//  }
 
 
 
@@ -365,7 +340,7 @@ def timingInMs(f : ()=>List[Any]) : (List[Any], Double) = {
       case None => false
       })
       .map({ case Some(x) => x
-      case None => get_default_record(name)
+      case None => Undefined()
       })
     data.filter {
       case Undefined() => false

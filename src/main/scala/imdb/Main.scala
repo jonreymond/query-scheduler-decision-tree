@@ -22,50 +22,18 @@ object Main {
   def main(args: Array[String]) {
 
 
-//    val sc = new SparkContext(new SparkConf())
-//    sc.
     val date = new DateTime()
     println(date.toString())
 //
-    val all_names = List(
-      "aka_name",
-      "aka_title",
-      "cast_info",
-      "char_name",
-      "comp_cast_type",
-      "company_name",
-      "company_type",
-      "complete_cast",
-      "info_type",
-      "keyword",
-      "kind_type",
-      "link_type",
-      "movie_companies",
-      "movie_info_idx",
-      "movie_keyword",
-      "movie_link",
-      "name",
-      "role_type",
-      "title",
-      "movie_info",
-      "person_info"
-    )
-//    val ind = (0 until all_names.length).map(i => all_names(i) -> i)
+
+
     val conf = new SparkConf().setAppName("app").setMaster("local[*]")
     val sc = SparkContext.getOrCreate(conf)
 //
-    val rdd_list = all_names.map(load(sc,_)).map(_.persist())
+    val rdd_list = NAMES.map(load(sc,_)).map(_.persist())
     rdd_list.foreach(x => println(x.count()))
 
-//    println(rdd_list(0).asInstanceOf[RDD[Aka_title]].takeSample(withReplacement = false,2).toList)
-//val path = getPath("cast_info", "imdb")
-//    val file = sc.textFile(path).persist()
-//    val res1 =file.map(x => if(x.contains('"'))1 else 0).reduce(_+_)
-//    println(res1)
-//    println(file.count())
-//    val aka =
-//    val q3 = new Q3(sc, 2)
-//    q3.execute()
+
     sc.stop()
 
     println("ici")
@@ -96,9 +64,8 @@ object Main {
 //      sc.stop()
 //    }
 //    writer.close()
-//    val s_num_core = "local[" + 2.toString + "]"
-//    println(s_num_core)
-//    sparkSession.stop()
+
+
 //    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
 //    val sc = SparkContext.getOrCreate(conf)
 //    println("Default parallelism: " + sc.defaultParallelism)
@@ -108,29 +75,12 @@ object Main {
 //    val rdd_k = load(sc, "keyword", 4).asInstanceOf[RDD[Keyword]]
 ////    println(rdd_k.getNumPartitions)
 //    println(rdd_k.takeSample(withReplacement = false,2).toList)
-////
-//    val rdd_mi = load(sc, "movie_info").asInstanceOf[RDD[Movie_info]]
-////    println(rdd_mi.takeSample(withReplacement = false,2).toList)
-////
-//    val rdd_mk = load(sc, "movie_keyword").asInstanceOf[RDD[Movie_keyword]]
-////    println(rdd_mk.takeSample(withReplacement = false,2).toList)
-////
-//    val rdd_t = load(sc, "title").asInstanceOf[RDD[Title]]
-
-//
-//    println(rdd_t.takeSample(withReplacement = false,2).toList)
-
-
-//    for
-//    val q3 = new Q3(rdd_k, rdd_mi, rdd_mk, rdd_t)
-//    val res = q3.execute()
-//    println(res)
-
 
 
 
 
   }
+
 
 //  def main2(args: Array[String]) {
 //    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
