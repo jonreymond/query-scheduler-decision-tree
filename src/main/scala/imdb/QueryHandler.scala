@@ -77,16 +77,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
         List(res)
   }
-//  val res = List("cn_f :" + cn_f.count(),
-//    "k_f :" + k_f.count(),
-//    "mc_f :" + mc_f.count(),
-//    "mk_f :" + mk_f.count(),
-//    "t_f :" + t_f.count(),
-//    "join1 :" + join1.count(),
-//    "join2 :" + join2.count(),
-//    "join3 :" + join3.count(),
-//    "tableres :" + table_res.count()
-//  )
+
 
   def q3(): List[Any] = {
     val k_f = k.filter(_.word.contains("sequel")).map(_.id -> false)
@@ -130,7 +121,8 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
                                     .map(x => x.info_type_id -> x.movie_id)
 
         val t_f = t.filter(_.production_year > 2005).map(x => x.id -> x.title)
-        val mc_f = mc.filter(x => x.note.contains("(theatrical") && x.note.contains("(France)"))
+
+        val mc_f = mc.filter(x => x.note.contains("(USA)"))
                       .map(x => x.company_type_id -> x.movie_id)
         val ct_f = ct.filter(_.kind == "production companies").map(_.id -> false)
         val it_f = it.map(_.id -> false)
@@ -142,10 +134,24 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
         //mi_movie_id  = mc.movie_id -> false
         val join1 = mi_it_j.join(mc_ct_j).map(_._1 -> false)
 
-        val res_table = t_f.join(join1).map(_._2._1)
-        val res = res_table.reduce(min_s)
+        val table_res = t_f.join(join1).map(_._2._1)
+        val res = table_res.reduce(min_s)
+
+//      val res = List("mi_f :" + mi_f.count(),
+//        "t_f :" + t_f.count(),
+//        "mc_f :" + mc_f.count(),
+//        "ct_f :" + ct_f.count(),
+//        "it_f :" + it_f.count(),
+//        "mi_it_j :" + mi_it_j.count(),
+//        "mc_ct_j :" + mc_ct_j.count(),
+//        "join1 :" + join1.count(),
+//        "table_res :" + table_res.count()
+//      )
+//    val res = (mc_f.map(_._1).distinct().collect().toList, ct_f.collect().toList)
 
         List(res)
+
+
   }
 
 

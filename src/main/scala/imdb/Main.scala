@@ -41,10 +41,10 @@ object Main {
     val num_measurements = 1
     val q_list = List(
 //      "q1",
-      "q2"//,//TODO :buggy
+//      "q2",
 //      "q3",
 //      "q4",
-//      "q5"//TODO: buggy
+      "q5"//TODO: buggy
       )
 
 
