@@ -36,9 +36,9 @@ object Main {
 //    sc.stop()
 
 
-    val num_core_l = List(1)
+    val num_core_l = List(1, 2, 4, 8, 16)
     val numPartitions_l = List(1,2,4,8,16,32,64)
-    val num_measurements = 1
+    val num_measurements = 5
     val q_list = List(
       "q1",
       "q2",
