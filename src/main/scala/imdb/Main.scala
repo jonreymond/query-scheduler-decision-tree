@@ -57,7 +57,7 @@ object Main {
 
     num_core_l.foreach { num_core =>
 
-      val conf = new SparkConf().setAppName("app").setMaster("local[*]")// + num_core.toString + "]")
+      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
       val sc = SparkContext.getOrCreate(conf)
       val rdd_list = NAMES.map(load(sc,_, num_core))//.map(_.persist())
 //      rdd_list.foreach(x => println(x.count()))
