@@ -25,6 +25,8 @@ libraryDependencies += "com.github.nscala-time" %% "nscala-time" % "2.30.0"
 
 libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.10"
 
+libraryDependencies += "com.storm-enroute" %% "scalameter-core" % "0.6"
+
 assemblyMergeStrategy in assembly := {
  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
  case x => MergeStrategy.first
