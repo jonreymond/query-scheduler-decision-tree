@@ -2,7 +2,7 @@
 .idea/*
 project/target/*
 project/project/target/
-
+out/*
 target/*
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,sbt
