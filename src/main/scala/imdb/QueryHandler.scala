@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 class QueryHandler(rdd_list : List[RDD[Record]]) {
   val aka_name: RDD[Aka_name] = rdd_list(0).asInstanceOf[RDD[Aka_name]]
   val aka_title: RDD[Aka_title] = rdd_list(1).asInstanceOf[RDD[Aka_title]]
-  val cast_info: RDD[Cast_info] = rdd_list(2).asInstanceOf[RDD[Cast_info]]
+  val ci: RDD[Cast_info] = rdd_list(2).asInstanceOf[RDD[Cast_info]]
   val chn: RDD[Char_name] = rdd_list(3).asInstanceOf[RDD[Char_name]]
   val comp_cast_type: RDD[Comp_cast_type] = rdd_list(4).asInstanceOf[RDD[Comp_cast_type]]
   val cn: RDD[Company_name] = rdd_list(5).asInstanceOf[RDD[Company_name]]
@@ -19,7 +19,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
   val mi_idx: RDD[Movie_info_idx] = rdd_list(13).asInstanceOf[RDD[Movie_info_idx]]
   val mk: RDD[Movie_keyword] = rdd_list(14).asInstanceOf[RDD[Movie_keyword]]
   val movie_link: RDD[Movie_link] = rdd_list(15).asInstanceOf[RDD[Movie_link]]
-  val name: RDD[Name] = rdd_list(16).asInstanceOf[RDD[Name]]
+  val n: RDD[Name] = rdd_list(16).asInstanceOf[RDD[Name]]
   val role_type: RDD[Role_type] = rdd_list(17).asInstanceOf[RDD[Role_type]]
   val t: RDD[Title] = rdd_list(18).asInstanceOf[RDD[Title]]
   val mi: RDD[Movie_info] = rdd_list(19).asInstanceOf[RDD[Movie_info]]
@@ -154,6 +154,29 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
   }
 
+  def q6(): List[Any] = {
+    //simplified since already know keyword
+    val k_f = k.filter(_.word.equals("marvel-cinematic-universe")).map(_.id -> false)
+    val n_f =n.filter(x => x.name.contains("Downey") || x.name.contains("Robert")).map(x =>x.id -> x.name)
+    val t_f = t.filter(_.production_year > 2010).map(x => x.id -> x.title)
+    val mk_f = mk.map(x => x.word_id -> x.movie_id)
+    val ci_f = ci.map(x => x.person_id ->  x.movie_id)
+
+    //ci_movie_id -> n.name
+    val n_ci = n_f.join(ci_f).map(x => x._2._2 -> x._2._1)
+    //mk_movie_id -> false
+    val k_mk = k_f.join(mk_f).map(_._2._2 -> false)
+    //t_id=mk_movie_id -> t_title
+    val t_mk = t_f.join(k_mk).map(x => x._1 -> x._2._1)
+    val res_table = n_ci.join(t_mk).map(x => x._2)
+
+    val res = res_table.reduce((a, b) =>(min_s(a._1,b._1), min_s(a._2, b._2)))
+
+    List(res._1, res._2)
+  }
+
+
+
 
   def get(s : String): () => List[Any] = {
     s match {
@@ -162,7 +185,8 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case "q3" => q3
       case "q4" => q4
       case "q5" => q5
-      case _ => () => List()
+      case "q6" => q6
+      case _ => () => ???
     }
   }
 }
