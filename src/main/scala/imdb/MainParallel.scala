@@ -34,11 +34,11 @@ object MainParallel {
 //    sc.stop()
 
 
-//    val num_core_l = List(1, 2, 4, 8, 16)
-//    val numPartitions_l = List(1,2,4,8,16,32,64)
-val num_core_l = List(8)
-    val numPartitions_l = List(8)
-    val num_measurements = 1 //TODO : ask what should count (load time or not)
+    val num_core_l = List(1, 2, 4, 8, 16)
+    val numPartitions_l = List(1,2,4,8,16,32,64)
+//val num_core_l = List(8)
+//    val numPartitions_l = List(8)
+    val num_measurements = 5 //TODO : ask what should count (load time or not)
     val q_list = List(
       "q1",
       "q2",
@@ -79,10 +79,9 @@ val num_core_l = List(8)
               val end = System.nanoTime()
               (output, (end-start)/1000000.0)
             })
-            //TODO : check correctness (twice same result)
-            val result1, result2 = measurements(0)._1
-            println(q_list(i) + " result : " + result1)
-            println(q_list(j) + " result : " + result2)
+            val result= measurements(0)._1
+            println(q_list(i) + " result : " + result._1)
+            println(q_list(j) + " result : " + result._2)
 
             val avg_timing = measurements.map(t => t._2).sum / num_measurements
 
