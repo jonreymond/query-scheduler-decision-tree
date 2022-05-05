@@ -13,17 +13,26 @@ import com.github.tototoshi.csv._
 import java.io.File
 
 
+
 object MainTest {
 
 
 
   def main(args: Array[String]) {
+    val r = Runner
+    val q1_res = r.load_runtime("q1")
+    val numCores = q1_res._2
+    println(q1_res._1.toList)
+    println(numCores)
+    val opt = new Optimizer(List("q1"), List(q1_res._1), numCores)
 
 
-    val date = new DateTime()
-    println(date.toString())
-    val day = date.day.get()+ "." + date.month.get() + "."+ date.year.get()
-    val time = "_" + date.hour.get() + "h" +date.minute.get()
+
+//    val date = new DateTime()
+//    println(date.toString())
+//    val day = date.day.get()+ "." + date.month.get() + "."+ date.year.get()
+//    val time = "_" + date.hour.get() + "h" +date.minute.get()
+
 
 
 
@@ -35,32 +44,32 @@ object MainTest {
 
 
 //    val num_core_l = List(2,4,8,16,32,64,128,256,512,1024)
-    val num_core_l = List(4)
-    val numPartitions_l = List(8)
-    val num_measurements = 1
-    val q_list = List(
-      "q1"//,
-//      "q2",
-//      "q3",
-//      "q4",
-//      "q5"
-      )
-    println(Runtime.getRuntime.availableProcessors())
-
-    num_core_l.foreach { num_core =>
-
-      println(num_core)
-      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
-      val sc = SparkContext.getOrCreate(conf)
-      val rdd1 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
-//      val rdd2 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
-      val begin = System.nanoTime()
-      rdd1.count()
-      val end = System.nanoTime()
-      println(end - begin)
-
-      sc.stop()
-    }
+//    val num_core_l = List(4)
+//    val numPartitions_l = List(8)
+//    val num_measurements = 1
+//    val q_list = List(
+//      "q1"//,
+////      "q2",
+////      "q3",
+////      "q4",
+////      "q5"
+//      )
+//    println(Runtime.getRuntime.availableProcessors())
+//
+//    num_core_l.foreach { num_core =>
+//
+//      println(num_core)
+//      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
+//      val sc = SparkContext.getOrCreate(conf)
+//      val rdd1 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
+////      val rdd2 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
+//      val begin = System.nanoTime()
+//      rdd1.count()
+//      val end = System.nanoTime()
+//      println(end - begin)
+//
+//      sc.stop()
+//    }
 
 
 

@@ -3,35 +3,54 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 class QueryHandler(rdd_list : List[RDD[Record]]) {
-  val aka_name: RDD[Aka_name] = rdd_list(0).asInstanceOf[RDD[Aka_name]]
-  val aka_title: RDD[Aka_title] = rdd_list(1).asInstanceOf[RDD[Aka_title]]
-  val ci: RDD[Cast_info] = rdd_list(2).asInstanceOf[RDD[Cast_info]]
-  val chn: RDD[Char_name] = rdd_list(3).asInstanceOf[RDD[Char_name]]
-  val comp_cast_type: RDD[Comp_cast_type] = rdd_list(4).asInstanceOf[RDD[Comp_cast_type]]
-  val cn: RDD[Company_name] = rdd_list(5).asInstanceOf[RDD[Company_name]]
-  val ct: RDD[Company_type] = rdd_list(6).asInstanceOf[RDD[Company_type]]
-  val complete_cast: RDD[Complete_cast] = rdd_list(7).asInstanceOf[RDD[Complete_cast]]
-  val it: RDD[Info_type] = rdd_list(8).asInstanceOf[RDD[Info_type]]
-  val k: RDD[Keyword] = rdd_list(9).asInstanceOf[RDD[Keyword]]
-  val kind_type: RDD[Kind_type] = rdd_list(10).asInstanceOf[RDD[Kind_type]]
-  val link_type: RDD[Link_type] = rdd_list(11).asInstanceOf[RDD[Link_type]]
-  val mc: RDD[Movie_companies] = rdd_list(12).asInstanceOf[RDD[Movie_companies]]
-  val mi_idx: RDD[Movie_info_idx] = rdd_list(13).asInstanceOf[RDD[Movie_info_idx]]
-  val mk: RDD[Movie_keyword] = rdd_list(14).asInstanceOf[RDD[Movie_keyword]]
-  val movie_link: RDD[Movie_link] = rdd_list(15).asInstanceOf[RDD[Movie_link]]
-  val n: RDD[Name] = rdd_list(16).asInstanceOf[RDD[Name]]
-  val role_type: RDD[Role_type] = rdd_list(17).asInstanceOf[RDD[Role_type]]
-  val t: RDD[Title] = rdd_list(18).asInstanceOf[RDD[Title]]
-  val mi: RDD[Movie_info] = rdd_list(19).asInstanceOf[RDD[Movie_info]]
-  val person_info: RDD[Person_info] = rdd_list(20).asInstanceOf[RDD[Person_info]]
+  //
+  val aka_name= (rdd_list(0).asInstanceOf[RDD[Aka_name]].cache(), "aka_name")
+  // "aka_title"
+  val aka_title = rdd_list(1).asInstanceOf[RDD[Aka_title]].cache()
+  // "cast_info
+  val ci = rdd_list(2).asInstanceOf[RDD[Cast_info]].cache()
+  // "char_name"
+  val chn= rdd_list(3).asInstanceOf[RDD[Char_name]].cache()
+  // "comp_cast_type"
+  val comp_cast_type = rdd_list(4).asInstanceOf[RDD[Comp_cast_type]].cache()
+  // "company_name"
+  val cn = rdd_list(5).asInstanceOf[RDD[Company_name]].cache()
+  // "company_type"
+  val ct= rdd_list(6).asInstanceOf[RDD[Company_type]].cache()
+  // "complete_cast"
+  val complete_cast = rdd_list(7).asInstanceOf[RDD[Complete_cast]].cache()
+  // "info_type"
+  val it = rdd_list(8).asInstanceOf[RDD[Info_type]].cache()
+  // "keyword"
+  val k = rdd_list(9).asInstanceOf[RDD[Keyword]].cache()
+  // "kind_type"
+  val kind_type = rdd_list(10).asInstanceOf[RDD[Kind_type]].cache()
+  // "link_type"
+  val link_type = rdd_list(11).asInstanceOf[RDD[Link_type]].cache()
+  // "movie_companies"
+  val mc = rdd_list(12).asInstanceOf[RDD[Movie_companies]].cache()
+  // "movie_info_idx"
+  val mi_idx = rdd_list(13).asInstanceOf[RDD[Movie_info_idx]].cache()
+  // "movie_keyword"
+  val mk = rdd_list(14).asInstanceOf[RDD[Movie_keyword]].cache()
+  // "movie_link"
+  val movie_link = rdd_list(15).asInstanceOf[RDD[Movie_link]].cache()
+  // "name"
+  val n= rdd_list(16).asInstanceOf[RDD[Name]].cache()
+  // "role_type"
+  val role_type = rdd_list(17).asInstanceOf[RDD[Role_type]].cache()
+  // "title"
+  val t = rdd_list(18).asInstanceOf[RDD[Title]].cache()
+  // "movie_info"
+  val mi = rdd_list(19).asInstanceOf[RDD[Movie_info]].cache()
+  // "person_info"
+  val person_info = rdd_list(20).asInstanceOf[RDD[Person_info]].cache()
 
-//  def q3_init() = {
-//    k.count()
-//    mi.count()
-//    t.count()
-//    mk.count()
-//  }
 
+
+  def q1_init(): Unit = {
+
+  }
     def q1(): (List[Any]) = {
 
       val ct_f = ct.filter(_.kind=="production companies").map(_.id -> false)
@@ -57,6 +76,14 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
       List(res._1._1, res._1._2, res._2)
     }
+
+  def q2_init(): Unit = {
+    cn.count()
+    k.count()
+    mc.count()
+    mk.count()
+    t.count()
+  }
 
   def q2(): List[Any] = {
         val cn_f = cn.filter(_.country_code =="[de]").map(_.id -> false)
@@ -95,6 +122,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
     List(res)
   }
+
   def q4(): List[Any] = {
         val it_f = it.filter(_.info == "rating").map(_.id -> false)
         val k_f = k.filter(_.word.contains("sequel")).map(_.id -> false)
@@ -174,7 +202,17 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
     List(res._1, res._2)
   }
-
+  def init_table(s: String): Unit = {
+    s match {
+      case "q1" => ct.count(); it.count(); mc.count(); mi_idx.count(); mc.count()
+      case "q2" => cn.count(); k.count(); mc.count(); mk.count(); t.count();
+      case "q3" => k.count(); mi.count(); t.count(); mk.count();
+      case "q4" => it.count(); k.count(); mi_idx.count(); mk.count(); t.count();
+      case "q5" => mi.count(); t.count(); mc.count(); ct.count(); it.count();
+      case "q6" => k.count(); n.count(); t.count(); mk.count(); ci.count();
+      case _ => ???
+    }
+  }
 
 
 

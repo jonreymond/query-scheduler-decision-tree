@@ -1,11 +1,13 @@
 package imdb
 
 import com.github.nscala_time.time.Imports._
+import org.apache.spark
 import org.apache.spark.{SparkConf, SparkContext}
+//import org.apache.log4j._
 
 //import org.apache.spark.sql.SparkSession
-//import org.apache.log4j.Logger
-//import org.apache.log4j.Level
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
 //import lsh._
 import com.github.tototoshi.csv._
 import scala.collection.parallel
@@ -18,7 +20,8 @@ object MainParallel {
 
 
   def main(args: Array[String]) {
-
+    Logger.getLogger("org").setLevel(Level.OFF)
+    Logger.getLogger("akka").setLevel(Level.OFF)
 
     val date = new DateTime()
     println(date.toString())
@@ -62,6 +65,7 @@ object MainParallel {
 
       val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
       val sc = SparkContext.getOrCreate(conf)
+
       val rdd_list = NAMES.map(load(sc,_, num_core))//.map(_.persist())
 //      rdd_list.foreach(x => println(x.count()))
 

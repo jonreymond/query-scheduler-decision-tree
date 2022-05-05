@@ -4,7 +4,7 @@ import org.apache.spark.sql.{Encoders, SparkSession}
 import java.util.concurrent._
 import scala.util.DynamicVariable
 
-import org.scalameter._
+//import org.scalameter._
 
 import java.io.File
 
@@ -404,9 +404,9 @@ def timingInMs(f : ()=>List[Any]) : (List[Any], Double) = {
     }
 
     // Workaround Dotty's handling of the existential type KeyValue
-    implicit def keyValueCoerce[T](kv: (Key[T], T)): KeyValue = {
-      kv.asInstanceOf[KeyValue]
-    }
+//    implicit def keyValueCoerce[T](kv: (Key[T], T)): KeyValue = {
+//      kv.asInstanceOf[KeyValue]
+//    }
 
 
 }
