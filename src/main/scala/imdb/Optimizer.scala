@@ -6,8 +6,8 @@ import optimus.optimization.model.{MPFloatVar, MPIntVar}
 import breeze.interpolation._
 import breeze.linalg.DenseVector
 import optimus.optimization.model.MPBinaryVar
-
 import Optimizer._
+import optimus.algebra.AlgebraOps
 
 class Optimizer(val name_queries : List[String], val runs_queries : List[List[(Int, Double)]], val num_cores : Int){
     require(!name_queries.isEmpty && !runs_queries.isEmpty)
@@ -44,9 +44,25 @@ class Optimizer(val name_queries : List[String], val runs_queries : List[List[(I
 
     val K = for(n <- 0 until num_runs) yield MPFloatVar(n.toString)
 
+    for(i <- 0 until num_queries)
+        {
+            add(AlgebraOps.sum(X(i).flatten) := 1)
+        }
+    for(n <- 0 until num_runs)
+    {
+        val temp = X.transpose
+//        add(:= 1)
+    }
 
 
 
+
+    start()
+
+    println(s"objective: $objectiveValue")
+//    println(s"x = ${x.value} y = ${y.value} z = ${z.value} t = ${t.value}")
+//TODO : transform matrix into subsets + delete empty runs
+    release()
     println("done")
 }
 private object Optimizer {
