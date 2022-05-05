@@ -57,7 +57,6 @@ object Runner {
 
     val num_core_l = List(1, 2, 4, 8, 16)
 
-
     val writer = CSVWriter.open(new File(STORE_PATH + queryName + ".csv"))
     writer.writeRow(List("num_cores", numPartitions))
 
