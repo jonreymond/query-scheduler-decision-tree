@@ -61,8 +61,8 @@ object MainTest {
       X(i)(m)(n) = i + 2 * m + 2*3 * n
     }
 //    println(X.mkString(" "))
-    print_array(X)
-    transpose_shift(X)
+//    print_array(X)
+//    transpose_shift(X)
 
 
 

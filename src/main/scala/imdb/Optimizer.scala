@@ -7,23 +7,22 @@ import breeze.interpolation._
 import breeze.linalg.DenseVector
 import optimus.optimization.model.MPBinaryVar
 import LPOptimizer._
-import optimus.algebra.AlgebraOps
-import scala.annotation.tailrec
+import optimus.algebra.{AlgebraOps, Expression, Zero}
 
-
+//import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 //abstract class Optimizer(val name_queries : List[String], val runs_queries : List[List[(Int, Double)]], val num_cores : Int)
 
 class LPOptimizer(val name_queries : List[String], val runs_queries : List[List[(Int, Double)]], val num_cores : Int){
-    require(!name_queries.isEmpty && !runs_queries.isEmpty)
+    require(name_queries.nonEmpty && runs_queries.nonEmpty)
     require(name_queries.length == runs_queries.length)
     //check if all maps have the same length
     require(runs_queries.forall(_.size == runs_queries.head.size))
 
 
     //can be seen as matrix T_ij = runtime of query i with j cores
-    val T = runs_queries.map(interpolate(_, num_cores))
+    private val T = runs_queries.map(interpolate(_, num_cores))
 
 //
 //    val T = Array.ofDim[Double](num_queries, num_cores)(Ts)
@@ -33,12 +32,15 @@ class LPOptimizer(val name_queries : List[String], val runs_queries : List[List[
     implicit val model: MPModel = MPModel(SolverLib.oJSolver)
 //    val test_val = MPBinaryVar("test")
 
-    val num_queries = name_queries.length
+    private val num_queries = name_queries.length
     //maximum number of runs of parallel
-    val num_runs = num_queries
+    private val num_runs = num_queries
     //where each query is mapped and with how many cores
-    val X = Array.ofDim[MPBinaryVar](num_queries, num_cores, num_runs)
-//    X(0)(0)(0) = test_val
+    private val X = Array.ofDim[MPBinaryVar](num_queries, num_cores, num_runs)
+    //to track max runtime of each runs
+
+    private val k = for(n <- 0 until num_runs) yield MPFloatVar(n.toString)
+    minimize(AlgebraOps.sum(k))
 
     for(i <- 0 until num_queries;
         m <- 0 until num_cores;
@@ -47,31 +49,56 @@ class LPOptimizer(val name_queries : List[String], val runs_queries : List[List[
             X(i)(m)(n) = MPBinaryVar(i.toString ++ m.toString ++ n.toString)
         }
 
-
-    val K = for(n <- 0 until num_runs) yield MPFloatVar(n.toString)
-//only one assignement per query
+    //only one assignement per query
     for(i <- 0 until num_queries)
         {
             add(AlgebraOps.sum(X(i).flatten) := 1)
         }
-
+    //foreach runs, the assigned queries do not exceed the number of cores
     for(n <- 0 until num_runs)
     {
+        var expr_n :Expression = Zero
+        for(i <- 0 until num_queries;
+            m <- 0 until num_cores)
+            {
+                expr_n += m * X(i)(m)(n)
+            }
+        add(expr_n <:= num_cores)
+    }
+    //track maximum time foreach runs
+    for(n <- 0 until num_runs;
+        i <- 0 until num_queries)
+        {
+            var expr_n :Expression = Zero
+            for(m <- 0 until num_cores)
+            {
+                expr_n += T(i)(m) * X(i)(m)(n)
+            }
+            add(expr_n <:= k(n))
+        }
 
-        val temp = X.transpose
-//        add(:= 1)
+    def compute(): (List[( Int, String, Int)], Double) = {
+        start()
+
+        println(s"objective: $objectiveValue")
+        //    println(s"x = ${x.value} y = ${y.value} z = ${z.value} t = ${t.value}")
+        val time = objectiveValue
+        var res : List[(Int, String,  Int)] = List()
+        for(i <- 0 until num_queries;
+            m <- 0 until num_cores;
+            n <- 0 until num_runs)
+        {
+            if(X(i)(m)(n).value.getOrElse(0) == 1)
+                {
+                    res = res :+ (n, name_queries(i), m)
+                }
+        }
+        release()
+        println("done")
+        (res, time)
     }
 
 
-
-
-    start()
-
-    println(s"objective: $objectiveValue")
-//    println(s"x = ${x.value} y = ${y.value} z = ${z.value} t = ${t.value}")
-//TODO : transform matrix into subsets + delete empty runs
-    release()
-    println("done")
 }
 
 
@@ -106,26 +133,26 @@ private object LPOptimizer {
         }
         res
     }
-    private def print_array[V:ClassTag](arr : Array[Array[Array[V]]]) = {
+    private def print_array[V:ClassTag](arr : Array[Array[Array[V]]]): Unit = {
         val res = transpose_shift[V](arr)
         //    val res = arr
-        for(i <-0 until res.length){
-            res(i).map(row => println(row.mkString(" ")))
+        for(i <-res.indices){
+            res(i).foreach(row => println(row.mkString(" ")))
             println()
         }
 
     }
 }
 class DPOptimizer(val name_queries : List[String], val runs_queries : List[List[(Int, Double)]], val num_cores : Int) {
-    require(!name_queries.isEmpty && !runs_queries.isEmpty)
+    require(name_queries.nonEmpty && runs_queries.nonEmpty)
     require(name_queries.length == runs_queries.length)
     //check if all maps have the same length
     require(runs_queries.forall(_.size == runs_queries.head.size))
     //if num > 16
-    val indices = 0 until runs_queries.length
-    val time_run = runs_queries.map(x => x(-1)._2)
+    private val indices = runs_queries.indices
+    private val time_run = runs_queries.map(x => x(-1)._2)
     //increase order
-    val temp = (time_run zip indices).sortBy(_._1)
+    private val temp = (time_run zip indices).sortBy(_._1)
 
 
 }
@@ -136,7 +163,7 @@ private object DPOptimizer {
     */
     def sort_queries(name_queries : List[String], runs_queries :List[List[(Int, Double)]],
                          index : Int): (List[String], List[List[(Int, Double)]] ) = {
-        val indices = 0 until runs_queries.length
+        val indices = runs_queries.indices
         val time_run = runs_queries.map(x => x(index)._2)
         //increase order
         val indices_sorted = (time_run zip indices).sortBy(_._1).map(_._2)
@@ -168,7 +195,7 @@ private object DPOptimizer {
      * @param num_cores : num_cores
      * @param start : start of the studied subset of query, included [start, end[
      * @param end : end of the studied subset of query, not included [start, end[
-     * @param acc
+     * @param acc : accumulator to get the split indexes
      * @return
      */
     def dp_split(queries : List[(String, Map[Int, Double])],
@@ -189,7 +216,7 @@ private object DPOptimizer {
         else
         {
             val split = math.ceil(queries.length / 2f).toInt
-            val new_acc = (acc + split)
+            val new_acc = acc + split
             val (split1, split2)= queries.splitAt(math.ceil(queries.length/2f).toInt)
             val split1_res = dp_split(split1, num_cores, start, start + split, new_acc)
             val split2_res = dp_split(split2, num_cores, start + split, end, new_acc)
