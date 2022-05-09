@@ -17,32 +17,34 @@ import java.io.File
 
 
 object MainTest {
-
-private def transpose_shift[V:ClassTag](arr : Array[Array[Array[V]]]): Array[Array[Array[V]]] = {
-  val xdim = arr.length
-  val ydim = arr(0).length
-  val zdim = arr(0)(0).length
-  println(xdim)
-  println(ydim)
-  println(zdim)
-  val res =  Array.ofDim[V](zdim, xdim, ydim)
-  for(x <-0 until xdim;
-      y <-0 until ydim;
-      z <- 0 until zdim)
-  {
-    res(z)(x)(y) = arr(x)(y)(z)
-  }
-  res
-}
-  private def print_array[V:ClassTag](arr : Array[Array[Array[V]]]) = {
-    val res = transpose_shift[V](arr)
-//    val res = arr
-    for(i <-0 until res.length){
-      res(i).map(row => println(row.mkString(" ")))
-      println()
-  }
-
-}
+/*
+(x,y,z) => (z, x, y)
+ */
+//private def transpose_shift[V:ClassTag](arr : Array[Array[Array[V]]]): Array[Array[Array[V]]] = {
+//  val xdim = arr.length
+//  val ydim = arr(0).length
+//  val zdim = arr(0)(0).length
+//  println(xdim)
+//  println(ydim)
+//  println(zdim)
+//  val res =  Array.ofDim[V](zdim, xdim, ydim)
+//  for(x <-0 until xdim;
+//      y <-0 until ydim;
+//      z <- 0 until zdim)
+//  {
+//    res(z)(x)(y) = arr(x)(y)(z)
+//  }
+//  res
+//}
+//  private def print_array[V:ClassTag](arr : Array[Array[Array[V]]]) = {
+//    val res = transpose_shift[V](arr)
+////    val res = arr
+//    for(i <-0 until res.length){
+//      res(i).map(row => println(row.mkString(" ")))
+//      println()
+//  }
+//
+//}
 
   def main(args: Array[String]) {
 //    val r = Runner
