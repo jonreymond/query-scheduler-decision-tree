@@ -27,10 +27,21 @@ object MainTest {
 //    println(numCores)
 //    println(numPartitions)
     val numPartitions = 16
-    val stream = List("q1", "q1", "q1", "q1",
-                      "q1", "q1", "q1", "q1",
-                      "q1", "q1", "q1", "q1",
-                      "q1", "q1", "q1", "q1")
+//    val stream = List(
+//      "q1", "q1", "q5", "q6",
+//      "q1", "q1", "q5", "q6",
+//      "q1", "q1", "q5", "q6",
+//      "q1", "q1", "q5", "q6")
+//    val stream = List(
+//      "q3", "q4", "q5", "q6",
+//      "q3", "q4", "q5", "q6",
+//      "q3", "q4", "q5", "q6",
+//      "q3", "q4", "q5", "q6")
+    val stream = List(
+      "q1", "q1", "q1", "q1",
+      "q1", "q1", "q1", "q1",
+      "q1", "q1", "q1", "q1",
+      "q1", "q1", "q1", "q1")
     val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
     assert(stream_runs.forall(_._2 == stream_runs(0)._2))
     val num_cores = stream_runs(0)._2

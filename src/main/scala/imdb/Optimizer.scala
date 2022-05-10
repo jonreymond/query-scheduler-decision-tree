@@ -157,7 +157,7 @@ class DPOptimizer(val name_queries : List[String], val runs_queries : List[List[
     require(name_queries.nonEmpty && runs_queries.nonEmpty)
     require(name_queries.length == runs_queries.length)
     require(runs_queries.forall(_.size == runs_queries.head.size))
-    private val queries = name_queries zip runs_queries.map(DPOptimizer.interpolate(_, num_cores))
+    private val queries = name_queries zip runs_queries.map(DPOptimizer.interpolator(_, num_cores))
 
 
     /**
@@ -225,7 +225,7 @@ private object DPOptimizer {
      * @param acc : accumulator to get the split indexes
      * @return
      */
-    def dp_split(queries : List[(String, Map[Int, Double])],
+    def dp_split(queries : List[(String, LinearInterpolator[Double])],
                  num_cores : Int,
                  start : Int,
                  end : Int,
@@ -243,30 +243,31 @@ private object DPOptimizer {
         }
         else
         {
-            val split = math.ceil((end - start) / 2f).toInt
-            val new_acc = acc + split
-            val split1_res = dp_split(queries, num_cores, start, start + split, new_acc)
-            val split2_res = dp_split(queries, num_cores, start + split, end, new_acc)
+            val split = start + math.ceil((end - start) / 2f).toInt
 
-            val split_res_time = split1_res._1 + split2_res._1
-            val split_res_acc = split1_res._2 ++ split2_res._2
+            val split1_res = dp_split(queries, num_cores, start, split, acc)
+            val split2_res = dp_split(queries, num_cores, split, end, acc)
+
+            val split_time = split1_res._1 + split2_res._1
+            val split_acc = split1_res._2 ++ split2_res._2 + split
             if (queries.length > num_cores) {
-                (split_res_time, split_res_acc)
+                //split needed
+                (split_time, split_acc)
             }
             else {
                 //TODO : check if must be a multiple of 2, here underestimate since not use all cores
-                val num_cores_per_query = num_cores / queries.length
+                val num_cores_per_query = num_cores * 1.0/ (end - start)
                 //TODO : check if replace by function or not
 
                 val sub_queries = for (i <- start until end) yield queries(i)
                 val max_time = sub_queries.map(_._2(num_cores_per_query)).max
-                if (max_time < split_res_time) {
+                if (max_time < split_time) {
                     //better not to split
                     (max_time, acc)
                 }
                 else {
                     //better to split
-                    (split_res_time, split_res_acc)
+                    (split_time, split_acc)
                 }
             }
         }
@@ -291,4 +292,79 @@ private object DPOptimizer {
 
         res.toMap
     }
+
+    /**
+     * Returns an interpolator
+     * @param runs_query
+     * @param num_cores
+     * @return
+     */
+    private def interpolator(runs_query: List[(Int, Double)], num_cores : Int): LinearInterpolator[Double] =
+    {
+        val (x1, y1) = runs_query.unzip
+        val x_arr = x1.map(_.toDouble).toArray
+        val y_arr = y1.toArray
+        val x = new DenseVector(x_arr)
+        val y = new DenseVector(y_arr)
+        return LinearInterpolator(x, y)
+
+    }
 }
+
+
+//
+///**
+// *
+// * @param queries : list of queries with runtimes
+// * @param num_cores : num_cores
+// * @param start : start of the studied subset of query, included [start, end[
+// * @param end : end of the studied subset of query, not included [start, end[
+// * @param acc : accumulator to get the split indexes
+// * @return
+// */
+//def dp_split(queries : List[(String, Map[Int, Double])],
+//    num_cores : Int,
+//    start : Int,
+//    end : Int,
+//    acc : Set[Int]): (Double, Set[Int]) = {
+//
+//    if(queries.isEmpty || end - start == 0)
+//    {
+//    (Double.MaxValue, acc)
+//    }
+//    //only one query
+//    else if((end - start) == 1)
+//    {
+//    val q = queries(start)
+//    (queries(start)._2(num_cores), acc)
+//    }
+//    else
+//    {
+//    val split = math.ceil((end - start) / 2f).toInt
+//    val new_acc = acc + split
+//    val split1_res = dp_split(queries, num_cores, start, start + split, new_acc)
+//    val split2_res = dp_split(queries, num_cores, start + split, end, new_acc)
+//
+//    val split_res_time = split1_res._1 + split2_res._1
+//    val split_res_acc = split1_res._2 ++ split2_res._2
+//    if (queries.length > num_cores) {
+//    (split_res_time, split_res_acc)
+//    }
+//    else {
+//    //TODO : check if must be a multiple of 2, here underestimate since not use all cores
+//    val num_cores_per_query = num_cores / queries.length
+//    //TODO : check if replace by function or not
+//
+//    val sub_queries = for (i <- start until end) yield queries(i)
+//    val max_time = sub_queries.map(_._2(num_cores_per_query)).max
+//    if (max_time < split_res_time) {
+//    //better not to split
+//    (max_time, acc)
+//    }
+//    else {
+//    //better to split
+//    (split_res_time, split_res_acc)
+//    }
+//    }
+//    }
+//    }
