@@ -17,52 +17,23 @@ import java.io.File
 
 
 object MainTest {
-/*
-(x,y,z) => (z, x, y)
- */
-//private def transpose_shift[V:ClassTag](arr : Array[Array[Array[V]]]): Array[Array[Array[V]]] = {
-//  val xdim = arr.length
-//  val ydim = arr(0).length
-//  val zdim = arr(0)(0).length
-//  println(xdim)
-//  println(ydim)
-//  println(zdim)
-//  val res =  Array.ofDim[V](zdim, xdim, ydim)
-//  for(x <-0 until xdim;
-//      y <-0 until ydim;
-//      z <- 0 until zdim)
-//  {
-//    res(z)(x)(y) = arr(x)(y)(z)
-//  }
-//  res
-//}
-//  private def print_array[V:ClassTag](arr : Array[Array[Array[V]]]) = {
-//    val res = transpose_shift[V](arr)
-////    val res = arr
-//    for(i <-0 until res.length){
-//      res(i).map(row => println(row.mkString(" ")))
-//      println()
-//  }
-//
-//}
 
   def main(args: Array[String]) {
 //    val r = Runner
-//    val q1_res = r.load_runtime("q1")
+//    val q1_res = r.load_runtime("q1", 32)
 //    val numCores = q1_res._2
+//    val numPartitions = q1_res._3
 //    println(q1_res._1.toList)
 //    println(numCores)
-//    val opt = new Optimizer(List("q1"), List(q1_res._1), numCores)
-    val X = Array.ofDim[Double](2, 3, 4)
-    for(i <- 0 until 2;
-        m <- 0 until 3;
-        n <- 0 until 4)
-    {
-      X(i)(m)(n) = i + 2 * m + 2*3 * n
-    }
-//    println(X.mkString(" "))
-//    print_array(X)
-//    transpose_shift(X)
+//    println(numPartitions)
+    val numPartitions = 16
+    val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q1", "q2")
+    val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
+    assert(stream_runs.forall(_._2 == stream_runs(0)._2))
+    val num_cores = stream_runs(0)._2
+
+    val optimizer = new DPOptimizer(stream, stream_runs.map(_._1), num_cores)
+    optimizer.compute()
 
 
 

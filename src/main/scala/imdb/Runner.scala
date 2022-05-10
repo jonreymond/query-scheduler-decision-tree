@@ -10,21 +10,25 @@ object Runner {
    * Load the runtime results of a given query, or run it if not yet existed
    *
    * @param queryName : name of query
-   * @return : map of numCore -> runtime, number of cores, number of partitions
+   * @param numPartitions : the results for the desired number of partitions
+   * @return : map of numCore -> runtime,
+   *           number of cores
    */
-  def load_runtime(queryName: String): (List[(Int, Double)], Int, Int) = {
+  def load_runtime(queryName: String, numPartitions: Int): (List[(Int, Double)], Int) = {
     try {
       val reader = CSVReader.open(new File(STORE_PATH + queryName + ".csv"))
       reader.close()
     }
     catch {
-      case _ => process(queryName)
+      case _ => println(queryName + " not processed, process in progress...")
+                process(queryName)
     }
     val reader = CSVReader.open(new File(STORE_PATH + queryName + ".csv"))
 
     val title = reader.readNext().get
-
-    val numPartitions = title(1).toInt
+    val list_partitions = title.tail.map(toInt)
+    require(list_partitions.contains(numPartitions))
+    val ind_partition = list_partitions.indexOf(numPartitions) + 1
 
     var result: List[(Int, Double)] = List()
 
@@ -34,16 +38,14 @@ object Runner {
       if (row.isEmpty) {
         isEmpty = true
       } else {
-
         val row_val = row.get
         val numCore = row_val(0).toInt
-        val time = row_val(1).toDouble
+        val time = row_val(ind_partition).toDouble
         result = result :+ numCore-> time
       }
     }
     reader.close()
-    println(result)
-    (result, result.last._1, numPartitions)
+    (result, result.last._1)
   }
 
   /**
@@ -85,6 +87,6 @@ object Runner {
       sc.stop()
     }
     writer.close()
-
+    println(queryName + " process done")
   }
 }

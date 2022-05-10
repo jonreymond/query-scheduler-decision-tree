@@ -7,7 +7,9 @@ import breeze.interpolation._
 import breeze.linalg.DenseVector
 import optimus.optimization.model.MPBinaryVar
 import LPOptimizer._
+import imdb.DPOptimizer.dp_split
 import optimus.algebra.{AlgebraOps, Expression, Zero}
+import scala.collection.mutable.ListBuffer
 
 //import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -77,6 +79,10 @@ class LPOptimizer(val name_queries : List[String], val runs_queries : List[List[
             add(expr_n <:= k(n))
         }
 
+    /**
+     *
+     * @return List of pairs of index of assigned bucket, name of query, number of cores needed
+     */
     def compute(): (List[( Int, String, Int)], Double) = {
         start()
 
@@ -143,17 +149,38 @@ private object LPOptimizer {
 
     }
 }
+
+
+
+
 class DPOptimizer(val name_queries : List[String], val runs_queries : List[List[(Int, Double)]], val num_cores : Int) {
     require(name_queries.nonEmpty && runs_queries.nonEmpty)
     require(name_queries.length == runs_queries.length)
-    //check if all maps have the same length
     require(runs_queries.forall(_.size == runs_queries.head.size))
-    //if num > 16
-    private val indices = runs_queries.indices
-    private val time_run = runs_queries.map(x => x(-1)._2)
-    //increase order
-    private val temp = (time_run zip indices).sortBy(_._1)
+    private val queries = name_queries zip runs_queries.map(DPOptimizer.interpolate(_, num_cores))
 
+
+    /**
+     *
+     * @return List of buckets containing the names of the assigned queries
+     */
+    def compute(): (List[List[String]], Double) = {
+        println(queries.length)
+        val (total_time, splits_set) =  dp_split(queries, num_cores, 0, queries.length, Set())
+        val splits = splits_set.toList.sorted :+ queries.length
+        var low_bound = 0
+        val buckets = ListBuffer[List[String]]()
+        for(i <- splits){
+            buckets += name_queries.slice(low_bound, i)
+            low_bound = i
+        }
+
+
+        println(total_time)
+        println(splits)
+        println(buckets.toList)
+        (buckets.toList, total_time)
+}
 
 }
 
@@ -204,22 +231,22 @@ private object DPOptimizer {
                  end : Int,
                 acc : Set[Int]): (Double, Set[Int]) = {
 
-        if(queries.isEmpty)
+        if(queries.isEmpty || end - start == 0)
             {
                 (Double.MaxValue, acc)
             }
             //only one query
         else if((end - start) == 1)
         {
+            val q = queries(start)
             (queries(start)._2(num_cores), acc)
         }
         else
         {
-            val split = math.ceil(queries.length / 2f).toInt
+            val split = math.ceil((end - start) / 2f).toInt
             val new_acc = acc + split
-            val (split1, split2)= queries.splitAt(math.ceil(queries.length/2f).toInt)
-            val split1_res = dp_split(split1, num_cores, start, start + split, new_acc)
-            val split2_res = dp_split(split2, num_cores, start + split, end, new_acc)
+            val split1_res = dp_split(queries, num_cores, start, start + split, new_acc)
+            val split2_res = dp_split(queries, num_cores, start + split, end, new_acc)
 
             val split_res_time = split1_res._1 + split2_res._1
             val split_res_acc = split1_res._2 ++ split2_res._2
@@ -243,5 +270,25 @@ private object DPOptimizer {
                 }
             }
         }
+    }
+
+    /**
+     * Returns an interpolated version of the runs of the queries (foreach number of cores, get value)
+     * @param runs_query
+     * @param num_cores
+     * @return
+     */
+    private def interpolate(runs_query: List[(Int, Double)], num_cores : Int): Map[Int, Double] =
+    {
+        val (x1, y1) = runs_query.unzip
+        val x_arr = x1.map(_.toDouble).toArray
+        val y_arr = y1.toArray
+        val x = new DenseVector(x_arr)
+        val y = new DenseVector(y_arr)
+        val f = LinearInterpolator(x, y)
+
+        val res = for(i <- 1 to num_cores) yield i -> f(i)
+
+        res.toMap
     }
 }
