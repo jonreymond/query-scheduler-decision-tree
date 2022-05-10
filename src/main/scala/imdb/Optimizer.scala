@@ -232,15 +232,10 @@ private object DPOptimizer {
                 acc : Set[Int]): (Double, Set[Int]) = {
 
         if(queries.isEmpty || end - start == 0)
-            {
                 (Double.MaxValue, acc)
-            }
-            //only one query
+        //only one query
         else if((end - start) == 1)
-        {
-            val q = queries(start)
             (queries(start)._2(num_cores), acc)
-        }
         else
         {
             val split = start + math.ceil((end - start) / 2f).toInt
@@ -250,25 +245,21 @@ private object DPOptimizer {
 
             val split_time = split1_res._1 + split2_res._1
             val split_acc = split1_res._2 ++ split2_res._2 + split
-            if (queries.length > num_cores) {
-                //split needed
+            //split needed
+            if (queries.length > num_cores)
                 (split_time, split_acc)
-            }
             else {
-                //TODO : check if must be a multiple of 2, here underestimate since not use all cores
                 val num_cores_per_query = num_cores * 1.0/ (end - start)
-                //TODO : check if replace by function or not
 
                 val sub_queries = for (i <- start until end) yield queries(i)
                 val max_time = sub_queries.map(_._2(num_cores_per_query)).max
-                if (max_time < split_time) {
-                    //better not to split
+
+                //better not to split
+                if (max_time < split_time)
                     (max_time, acc)
-                }
-                else {
-                    //better to split
+                //better to split
+                else
                     (split_time, split_acc)
-                }
             }
         }
     }
@@ -306,7 +297,7 @@ private object DPOptimizer {
         val y_arr = y1.toArray
         val x = new DenseVector(x_arr)
         val y = new DenseVector(y_arr)
-        return LinearInterpolator(x, y)
+        LinearInterpolator(x, y)
 
     }
 }

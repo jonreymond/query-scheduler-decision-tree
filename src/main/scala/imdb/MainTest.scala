@@ -19,13 +19,6 @@ import java.io.File
 object MainTest {
 
   def main(args: Array[String]) {
-//    val r = Runner
-//    val q1_res = r.load_runtime("q1", 32)
-//    val numCores = q1_res._2
-//    val numPartitions = q1_res._3
-//    println(q1_res._1.toList)
-//    println(numCores)
-//    println(numPartitions)
     val numPartitions = 16
 //    val stream = List(
 //      "q1", "q1", "q5", "q6",
