@@ -13,6 +13,7 @@ import scala.reflect.ClassTag
 import com.github.tototoshi.csv._
 
 import java.io.File
+import sys.process._
 
 
 
@@ -35,12 +36,18 @@ object MainTest {
       "q1", "q1", "q1", "q1",
       "q1", "q1", "q1", "q1",
       "q1", "q1", "q1", "q1")
-    val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
-    assert(stream_runs.forall(_._2 == stream_runs(0)._2))
-    val num_cores = stream_runs(0)._2
 
-    val optimizer = new DPOptimizer(stream, stream_runs.map(_._1), num_cores)
-    optimizer.compute()
+
+      val test2:String = "python src/main/python/schedule_optimizer.py --queries ['q1','q2','q3'] --num_partitions 16".!!
+      val groups = test2.split(';').toList
+      val res = groups.map(x=> x.split(';').toList)
+      println(res)
+//    val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
+//    assert(stream_runs.forall(_._2 == stream_runs(0)._2))
+//    val num_cores = stream_runs(0)._2
+//
+//    val optimizer = new DPOptimizer(stream, stream_runs.map(_._1), num_cores)
+//    optimizer.compute()
 
 
 
