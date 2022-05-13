@@ -29,7 +29,8 @@ if __name__ == "__main__":
     # optimize_schedule()
     queries = ["q1", "q2", "q3", "q4"]
     num_partitions = '16'
+    df_queries = utils.load(queries, num_partitions)
+    q_interp = utils.interpolate(df_queries)
 
-    print(res)
-    print()
+    print("done")
 

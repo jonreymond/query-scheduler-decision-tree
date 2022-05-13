@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import sys
+from scipy.interpolate import interp1d
 
 sys.path.append(".")
 sys.path.append("../resources/results")
@@ -16,7 +17,6 @@ def load_col(filename, num_partitions, other_path=""):
     df = df_raw.copy()
     df[partitions] = df_raw[partitions] / 1000
     df["num_cores"].astype('string') + " cores"
-    # print(df['num_cores'])
     return df[num_partitions], df['num_cores']
 
 
@@ -33,3 +33,14 @@ def load(queries: str, num_partitions: str, other_path=""):
     return df
 
     return df[num_partitions]
+
+
+def interpolate(df):
+    x = df['num_cores']
+    names = list(df.columns.values)[1:]
+    res = {}
+    for n in names:
+        f = interp1d(x, df[n], kind="linear")
+        res.update({n: f})
+    return res
+
