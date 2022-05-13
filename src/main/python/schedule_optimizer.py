@@ -6,6 +6,7 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import utils
 
 @click.command()
 @click.option(
@@ -25,4 +26,10 @@ def optimize_schedule(queries, num_partitions):
     print("q1,q2;q3,q4;q3,q4,q5")
 
 if __name__ == "__main__":
-    optimize_schedule()
+    # optimize_schedule()
+    queries = ["q1", "q2", "q3", "q4"]
+    num_partitions = '16'
+
+    print(res)
+    print()
+
