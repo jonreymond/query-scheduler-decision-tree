@@ -6,6 +6,7 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import cvxpy as cp
 import utils
 
 @click.command()
