@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import cvxpy as cp
 import utils
+import ilp_optimizer
 
 @click.command()
 @click.option(
@@ -32,6 +33,8 @@ if __name__ == "__main__":
     num_partitions = '16'
     df_queries = utils.load(queries, num_partitions)
     q_interp = utils.interpolate(df_queries)
+    result = ilp_optimizer.optimize(queries, q_interp)
+    print(result)
 
     print("done")
 
