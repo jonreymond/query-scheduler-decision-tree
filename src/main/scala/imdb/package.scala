@@ -408,5 +408,12 @@ def timingInMs(f : ()=>List[Any]) : (List[Any], Double) = {
 //      kv.asInstanceOf[KeyValue]
 //    }
 
+  def toPythonListString(l : List[Any]): String = {
+    var res = "["
+    for(s <- l){
+      res = res + "'"+ s.toString + "',"
+    }
+    res.dropRight(1) + "]"
+  }
 
 }

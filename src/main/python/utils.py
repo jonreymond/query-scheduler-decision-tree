@@ -44,3 +44,9 @@ def interpolate(df):
         res.update({n: f})
     return res
 
+
+def interpolate_discrete(df, C):
+    res = interpolate(df)
+    dict_res = {}
+
+

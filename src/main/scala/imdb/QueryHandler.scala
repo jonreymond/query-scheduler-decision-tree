@@ -227,6 +227,18 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case _ => () => ???
     }
   }
+
+//  def getProba(s : String): () => Double = {
+//    s match {
+//      case "q1" => q1
+//      case "q2" => q2
+//      case "q3" => q3
+//      case "q4" => q4
+//      case "q5" => q5
+//      case "q6" => q6
+//      case _ => () => ???
+//    }
+//  }
 }
 
 

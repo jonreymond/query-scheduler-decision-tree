@@ -59,3 +59,4 @@ project/plugins/project/
 
 #Ressources
 src/main/resources
+*.pyc

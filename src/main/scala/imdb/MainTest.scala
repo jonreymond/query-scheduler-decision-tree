@@ -23,31 +23,53 @@ object MainTest {
     val numPartitions = 16
 //    val stream = List(
 //      "q1", "q1", "q5", "q6",
-//      "q1", "q1", "q5", "q6",
-//      "q1", "q1", "q5", "q6",
 //      "q1", "q1", "q5", "q6")
-//    val stream = List(
-//      "q3", "q4", "q5", "q6",
-//      "q3", "q4", "q5", "q6",
-//      "q3", "q4", "q5", "q6",
-//      "q3", "q4", "q5", "q6")
     val stream = List(
-      "q1", "q1", "q1", "q1",
-      "q1", "q1", "q1", "q1",
-      "q1", "q1", "q1", "q1",
-      "q1", "q1", "q1", "q1")
+      "q3", "q4", "q5", "q6",
+      "q3", "q4", "q5", "q6",
+      "q3", "q4", "q5", "q6",
+      "q3", "q4", "q5", "q6")
+//    val stream = List(
+//      "q1", "q1", "q1", "q1",
+//      "q1", "q1", "q1", "q1",
+//      "q1", "q1", "q1", "q1",
+//      "q1", "q1", "q1", "q1")
 
 
-      val test2:String = "python src/main/python/schedule_optimizer.py --queries ['q1','q2','q3'] --num_partitions 16".!!
-      val groups = test2.split(';').toList
-      val res = groups.map(x=> x.split(';').toList)
-      println(res)
+
+    val d = new DecisionTree(stream)
+    //value to multiply to not get E notation
+
+    val probas = d.getProbas()
+
+    println(toPythonListString(probas))
+    println(toPythonListString(stream))
+
+
+    var command = "python src/main/python/schedule_optimizer.py"
+    command = command + " --queries " + toPythonListString(stream)
+    command = command + " --num_partitions 16"
+    command = command + " --probas " + toPythonListString(probas)
+    println(command)
+
+
+    val test2:String = command.!!
+
+    println(test2)
+//      val groups = test2.split(';').toList
+//      val res = groups.map(x=> x.split(';').toList)
+//      println(res)
+
+//    val list_queries_tree = List("q2", "q3", "q6", "q1", "q4", "q3", "q5",
+//      "q11","q11","q11","q11","q11","q11","q11","q11")
+
+
+
+
 //    val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
 //    assert(stream_runs.forall(_._2 == stream_runs(0)._2))
 //    val num_cores = stream_runs(0)._2
-//
-//    val optimizer = new DPOptimizer(stream, stream_runs.map(_._1), num_cores)
-//    optimizer.compute()
+
 
 
 
