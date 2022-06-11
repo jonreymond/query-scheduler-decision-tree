@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import cvxpy as cp
 import utils
-import ilp_optimizer
+import cp_optimizer
 import ast
 
 
@@ -45,14 +45,36 @@ def optimize_schedule(queries, num_partitions, probas):
     print([float(i) for i in probas])
     print("done")
 
+
 if __name__ == "__main__":
-    optimize_schedule()
-#     queries = ["q1", "q2", "q3", "q4"]
-#     num_partitions = '16'
-#     df_queries = utils.load(queries, num_partitions)
-#     q_interp = utils.interpolate(df_queries)
-#     result = ilp_optimizer.optimize(queries, q_interp)
-#     print(result)
-#
-#     print("done")
+    # optimize_schedule()
+
+
+    # runtime example without split#
+    q_list = ["q1", "q3", "q2", "q4","q2", "q5", "q6"]
+    df_queries = utils.load(q_list, num_partitions='16')
+    res = utils.interpolate(df_queries)
+    precision = 10
+    C =16
+    Q = len(q_list)
+    R = int(round(Q / 2))
+    result = cp_optimizer.optimize(q_list, res, C, R, precision)
+    print(result)
+
+
+    # Split example #
+    # q_list = ["q1", "q3", "q2", "q4","q2","q2", "q5", "q6"]
+    # df_queries = utils.load(q_list, num_partitions='16')
+    # res = utils.interpolate(df_queries)
+    # precision = 10
+    # C =16
+    # Q = len(q_list)
+    # R = int(round(Q / 2))
+    # q_splitted, procees_time = cp_optimizer.split(q_list, res, C, precision)
+    # results = []
+    # for qq in q_splitted:
+    #     results.append(cp_optimizer.optimize(qq, res, C, R, precision))
+    #     print('done')
+    # process_time, runtime, res_schedule = cp_optimizer.combine_results(results)
+    # print(process_time, runtime, res_schedule)
 

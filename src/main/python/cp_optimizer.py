@@ -35,7 +35,7 @@ def init_variables(model, T, Q, C, R):
     return V, I, X, k, t_ind, A
 
 
-def define_program(model, variables, T, Q, C, R, probas, C_=None):
+def define_program(model, variables, T, Q, C, R, probas=None, C_=None):
     (V, I, X, k, t_ind, A) = variables
     # 1
     for q in range(Q):
@@ -55,12 +55,11 @@ def define_program(model, variables, T, Q, C, R, probas, C_=None):
     for r in range(R):
         model.AddMaxEquality(k[r], [t_ind[q, r] for q in range(Q)])
 
-    # 4 probabilities
-    V_norm = V / sum(V)
-        
-    reg = sum([int((1 - epsilon)**r * 10000) * sum([probas[q] * V_norm[q, r] for q in range(Q)]) for r in range(R)])
-
-    obj = sum(k[r] for r in range(R)) + reg
+    if probas is None:
+        obj = sum(k[r] for r in range(R))
+    else :
+        #TODO : implement
+        obj = None
     model.Minimize(obj)
 
 
@@ -82,7 +81,7 @@ def model_to_solution(solver, R, V, k, q_list, precision):
     return runtime / precision, res_schedule
 
 
-def optimize(q_list, res, C, R, precision, probas, C_=None):
+def optimize(q_list, res, C, R, precision, probas=None, C_=None):
     Q = len(q_list)
     T = init_matrix(q_list, res, C, precision)
     model = cp_model.CpModel()
