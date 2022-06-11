@@ -5,7 +5,6 @@ import utils
 
 # maximal length algorithm can scale
 MAX_LEN_QUERIES = 9
-reg_factor = 0.01
 
 '''
 Initialize matrix T of runtime foreach query :
@@ -77,7 +76,7 @@ def define_proba_program(model, variables, Q, R, proba_variables):
     #Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
     V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
-    probas, num_paths, path_sets_idx = proba_variables
+    probas, num_paths, path_sets_idx, reg_factor = proba_variables
     for q in range(Q):
         for r in range(R):
             model.Add(V[q,r] > 0).OnlyEnforceIf(V_bool[q,r])
@@ -91,7 +90,6 @@ def define_proba_program(model, variables, Q, R, proba_variables):
     #Get runtime of each run
     for r in range(R):
         model.Add(runtime_runs[r] == sum(k[rr] for rr in range(r + 1)))
-
     #Get runtime of each query
     for q in range(Q):
         model.AddElement(index_run[q], runtime_runs, runtime_queries[q])
@@ -99,7 +97,7 @@ def define_proba_program(model, variables, Q, R, proba_variables):
     for (id_p, path_set) in enumerate(path_sets_idx):
         model.AddMaxEquality(runtime_paths[id_p], [runtime_queries[q] for q in path_set])
 
-    obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths)) +  reg_factor *sum(k[r] for r in range(R))
+    obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths)) + reg_factor * sum(k[r] for r in range(R))
     return obj
 
 
@@ -121,7 +119,7 @@ def model_to_solution(solver, R, V, k, q_list, precision):
     return runtime / precision, res_schedule
 
 
-def optimize(q_list, res, C, R, precision, probas=None, C_=None):
+def optimize(q_list, res, C, R, precision, probas=None, reg_factor=None, C_=None):
     Q = len(q_list)
     T = init_matrix(q_list, res, C, precision)
     model = cp_model.CpModel()
@@ -132,7 +130,7 @@ def optimize(q_list, res, C, R, precision, probas=None, C_=None):
         path_sets_idx = utils.get_path_sets(range(len(q_list)))
         num_paths = len(path_sets_idx)
         variables = init_variables(model, T, Q, C, R, num_paths)
-        proba_variables = (probas, num_paths, path_sets_idx)
+        proba_variables = (probas, num_paths, path_sets_idx, reg_factor)
 
     define_program(model, variables, T, Q, C, R, C_, proba_variables)
 
@@ -142,7 +140,7 @@ def optimize(q_list, res, C, R, precision, probas=None, C_=None):
     process_time = time.time() - start_time
 
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        (V, _, _, k, _, _) = variables
+        (V, _, _, k, _, _, _) = variables
         runtime, res_schedule = model_to_solution(solver, R, V, k, q_list, precision)
     else:
         runtime, res_schedule = -1, []
