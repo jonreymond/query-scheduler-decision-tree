@@ -3,8 +3,8 @@ name := "Project_2_solution"
 version := "0.1.0"
 //"2.11.8"
 //"2.12.15"
-scalaVersion := "2.12.15"
-val sparkVersion = "3.2.1"
+scalaVersion := "2.11.8"
+val sparkVersion = "2.3.1"
 
 libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
 
@@ -29,23 +29,19 @@ libraryDependencies += "com.github.tototoshi" %% "scala-csv" % "1.3.10"
 //libraryDependencies += "com.storm-enroute" %% "scalameter-core" % "0.6"
 
 //LP solver
-libraryDependencies ++= Seq(
-  "com.github.vagmcs" %% "optimus" % "3.4.1",
-  "com.github.vagmcs" %% "optimus-solver-oj" % "3.4.1",
-  "com.github.vagmcs" %% "optimus-solver-lp" % "3.4.1",
-"com.github.vagmcs" %% "optimus-solver-gurobi" % "3.4.1",
-"com.github.vagmcs" %% "optimus-solver-mosek" % "3.4.1"
-)
+//libraryDependencies ++= Seq(
+//  "com.github.vagmcs" %% "optimus" % "3.4.1",
+//  "com.github.vagmcs" %% "optimus-solver-oj" % "3.4.1",
+//  "com.github.vagmcs" %% "optimus-solver-lp" % "3.4.1",
+//"com.github.vagmcs" %% "optimus-solver-gurobi" % "3.4.1",
+//"com.github.vagmcs" %% "optimus-solver-mosek" % "3.4.1"
+//)
 
 //Interpolation
-libraryDependencies  ++= Seq(
-  // Last stable release
-  "org.scalanlp" %% "breeze" % "2.0.1-RC1",
-
-  // The visualization library is distributed separately as well.
-  // It depends on LGPL code
-  "org.scalanlp" %% "breeze-viz" % "2.0.1-RC1"
-)
+//libraryDependencies  ++= Seq(
+//  "org.scalanlp" %% "breeze" % "2.0.1-RC1",
+//  "org.scalanlp" %% "breeze-viz" % "2.0.1-RC1"
+//)
 
 //libraryDependencies ++= Seq(
 //  // One SLF4J implementation (log4j-slf4j-impl) is here:

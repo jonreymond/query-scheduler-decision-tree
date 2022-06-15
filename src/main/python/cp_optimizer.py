@@ -5,13 +5,12 @@ import utils
 
 # maximal length algorithm can scale
 MAX_LEN_QUERIES = 9
+MODEL_STATUS = ["UNKNOWN", "MODEL_INVALID", "FEASIBLE", "IN-FEASIBLE", "OPTIMAL"]
 
 '''
 Initialize matrix T of runtime foreach query :
 T_ij = runtime of query i with j cores
 '''
-
-
 def init_matrix(q_list, res, C, precision):
     Q = len(q_list)
     T = np.zeros((Q, C))
@@ -45,7 +44,8 @@ def init_variables(model, T, Q, C, R, num_paths=None):
         runtime_paths = {p: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_path_{q}') for p in range(num_paths)}
         return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths)
 
-def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None):
+
+def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, reg_factor = None):
     (V, I, X, k, t_ind, A, remain) = variables
     # 1
     for q in range(Q):
@@ -67,16 +67,16 @@ def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None):
 
     obj = sum(k[r] for r in range(R))
     if proba_variables is not None :
-        obj = define_proba_program(model, variables, Q, R, proba_variables)
+        obj = define_proba_program(model, variables, Q, R, proba_variables, reg_factor)
 
     model.Minimize(obj)
 
 
-def define_proba_program(model, variables, Q, R, proba_variables):
+def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
     #Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
     V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
-    probas, num_paths, path_sets_idx, reg_factor = proba_variables
+    probas, num_paths, path_sets_idx = proba_variables
     for q in range(Q):
         for r in range(R):
             model.Add(V[q,r] > 0).OnlyEnforceIf(V_bool[q,r])
@@ -101,7 +101,32 @@ def define_proba_program(model, variables, Q, R, proba_variables):
     return obj
 
 
-def model_to_solution(solver, R, V, k, q_list, precision):
+def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_factor=None):
+    Q = len(q_list)
+    T = init_matrix(q_list, res, C, precision)
+    model = cp_model.CpModel()
+    if proba_variables is None:
+        variables = init_variables(model, T, Q, C, R)
+    else :
+        _, num_paths, _ = proba_variables
+        variables = init_variables(model, T, Q, C, R, num_paths)
+
+    define_program(model, variables, T, Q, C, R, C_, proba_variables, reg_factor)
+
+    start_time = time.time()
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    process_time = time.time() - start_time
+    return process_time, (status, solver, R, variables, q_list, precision)
+
+
+def get_proba_variables(q_list, probas):
+    path_sets_idx = utils.get_path_sets(range(len(q_list)))
+    num_paths = len(path_sets_idx)
+    return probas, num_paths, path_sets_idx
+
+
+def model_to_solution(solver, R, V, k, q_list, precision, name_queries=True):
     Q = len(q_list)
     res_schedule = []
     for r in range(R):
@@ -109,44 +134,24 @@ def model_to_solution(solver, R, V, k, q_list, precision):
         for q in range(Q):
             q_r_val = round(solver.Value(V[(q, r)]))
             if q_r_val > 0:
-                run_r.append((q_list[q], q_r_val))
-        if run_r != []:
+                if name_queries:
+                    run_r.append((q_list[q], q_r_val))
+                else:
+                    run_r.append((q, q_r_val))
+        if run_r:
             res_schedule.append(run_r)
-    runtime = 0
-    for r in range(R):
-        runtime += solver.Value(k[r])
+    runtime = sum(solver.Value(k[r]) for r in range(R))
 
     return runtime / precision, res_schedule
 
 
-def optimize(q_list, res, C, R, precision, probas=None, reg_factor=None, C_=None):
-    Q = len(q_list)
-    T = init_matrix(q_list, res, C, precision)
-    model = cp_model.CpModel()
-    proba_variables = None
-    if probas is None:
-        variables = init_variables(model, T, Q, C, R)
-    else :
-        path_sets_idx = utils.get_path_sets(range(len(q_list)))
-        num_paths = len(path_sets_idx)
-        variables = init_variables(model, T, Q, C, R, num_paths)
-        proba_variables = (probas, num_paths, path_sets_idx, reg_factor)
-
-    define_program(model, variables, T, Q, C, R, C_, proba_variables)
-
-    start_time = time.time()
-    solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-    process_time = time.time() - start_time
-
+def get_program_results(status, solver, R, variables, q_list, precision, name_queries=True):
     if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
         (V, _, _, k, _, _, _) = variables
-        runtime, res_schedule = model_to_solution(solver, R, V, k, q_list, precision)
+        runtime, res_schedule = model_to_solution(solver, R, V, k, q_list, precision, name_queries)
     else:
         runtime, res_schedule = -1, []
-
-    return process_time, runtime, res_schedule
-
+    return runtime, res_schedule
 
 def split(q_list, res, C, precision):
     if len(q_list) > MAX_LEN_QUERIES:

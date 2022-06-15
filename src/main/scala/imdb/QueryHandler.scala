@@ -3,8 +3,8 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 class QueryHandler(rdd_list : List[RDD[Record]]) {
-  //
-  val aka_name= (rdd_list(0).asInstanceOf[RDD[Aka_name]].cache(), "aka_name")
+  // "aka_name"
+  val an= rdd_list(0).asInstanceOf[RDD[Aka_name]].cache()
   // "aka_title"
   val aka_title = rdd_list(1).asInstanceOf[RDD[Aka_title]].cache()
   // "cast_info
@@ -26,7 +26,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
   // "kind_type"
   val kind_type = rdd_list(10).asInstanceOf[RDD[Kind_type]].cache()
   // "link_type"
-  val link_type = rdd_list(11).asInstanceOf[RDD[Link_type]].cache()
+  val lt = rdd_list(11).asInstanceOf[RDD[Link_type]].cache()
   // "movie_companies"
   val mc = rdd_list(12).asInstanceOf[RDD[Movie_companies]].cache()
   // "movie_info_idx"
@@ -34,17 +34,17 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
   // "movie_keyword"
   val mk = rdd_list(14).asInstanceOf[RDD[Movie_keyword]].cache()
   // "movie_link"
-  val movie_link = rdd_list(15).asInstanceOf[RDD[Movie_link]].cache()
+  val ml = rdd_list(15).asInstanceOf[RDD[Movie_link]].cache()
   // "name"
   val n= rdd_list(16).asInstanceOf[RDD[Name]].cache()
   // "role_type"
-  val role_type = rdd_list(17).asInstanceOf[RDD[Role_type]].cache()
+  val rt = rdd_list(17).asInstanceOf[RDD[Role_type]].cache()
   // "title"
   val t = rdd_list(18).asInstanceOf[RDD[Title]].cache()
   // "movie_info"
   val mi = rdd_list(19).asInstanceOf[RDD[Movie_info]].cache()
   // "person_info"
-  val person_info = rdd_list(20).asInstanceOf[RDD[Person_info]].cache()
+  val pi = rdd_list(20).asInstanceOf[RDD[Person_info]].cache()
 
 
 
@@ -178,8 +178,6 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 //    val res = (mc_f.map(_._1).distinct().collect().toList, ct_f.collect().toList)
 
         List(res)
-
-
   }
 
   def q6(): List[Any] = {
@@ -202,6 +200,61 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 
     List(res._1, res._2)
   }
+
+  def q7(): List[Any] = {
+    val an_f = an.filter(_.name.length > 10).map(_.person_id -> false)
+    val it_f = it.filter(x => x.info == "mini biography" || x.info == "biographical movies").map(_.id -> false)
+    val n_f = n.filter(x => x.name_pcode_cf.length > 0 && x.gender == "m").map(x => x.id -> x.name)
+    val pi_f = pi.filter(_.note.length > 200).map(x => x.info_type_id -> x.person_id)
+    val t_f = t.filter(x => x.production_year >= 1980 && x.production_year < 1984).map(x => x.id -> x.title)
+    val ci_f = ci.map(x => x.movie_id -> x.person_id)
+    val lt_f = lt.filter(x =>List("references", "referenced in", "features", "featured in").contains(x.link)).map(x => x.id -> false)
+    val ml_f = ml.map(x =>   x.link_type_id ->x.linked_movie_id)
+
+    //ml_linked_movie ->false
+    val lt_ml = lt_f.join(ml_f).map(x => x._2._2 -> false)
+    // pi_person_id -> false
+    val it_pi = it_f.join(pi_f).map(_._2._2 -> false)
+    // t.id = ml.linked -> t.title
+    val t_ml = t_f.join(lt_ml).map(x => x._1 -> x._2._1)
+    // ci.person_id -> t.title
+    val t_ml_ci = t_ml.join(ci_f).map(x => x._2._2 -> x._2._1)
+    // ci.person_id = pi.person_id -> t.title
+    val ci_pi = it_pi.join(t_ml_ci).map(x => x._1 -> x._2._2)
+    // an.person_id = ci.person_id = pi.person_id -> t.title
+    val an_ci_pi = ci_pi.join(an_f).map(x => x._1 -> x._2._1)
+
+    val res_table = an_ci_pi.join(n_f).map(x => x._2)
+
+    val res = res_table.reduce((a, b) =>(min_s(a._1,b._1), min_s(a._2, b._2)))
+    List(res._1, res._2)
+  }
+
+  def q8(): List[Any] = {
+    val an_f = an.map(x => x.person_id -> x.name)
+    val ci_f = ci.filter(_.note == "(voice: English version)").map(x => x.role_id -> (x.movie_id, x.person_id))
+    val cn_f = cn.filter(_.country_code == "[jp]").map(_.id -> false)
+    val mc_f = mc.filter(x => x.note.contains("(Japan)") && !x.note.contains("(USA)")).map(x => x.company_id -> x.movie_id)
+    val n_f = n.filter(x => x.name.contains("Yo") && !x.name.contains("Yu")).map(_.id -> false)
+    val rt_f = rt.filter(_.role == "actress").map(_.id -> false)
+    val t_f = t.map(x => x.id -> x.title)
+
+    //  ci.movie_id -> ci.person_id
+    val ci_rt = ci_f.join(rt_f).map(x => x._2._1._1 -> x._2._1._2)
+    //mc.movie_id -> false
+    val mc_cn = mc_f.join(cn_f).map(_._2._1 -> false)
+    //t.id = mc.movie_id -> t.title
+    val t_mc = mc_cn.join(t_f).map(x => x._1 -> x._2._2)
+    // ci.person_id = t.id = mc.movie_id -> t.title
+    val ci_t_mc = ci_rt.join(t_mc).map(x => x._2._1 -> x._2._2)
+    // n.id = ci.person_id -> t.title
+    val ci_n = ci_t_mc.join(n_f).map(x => x._1 -> x._2._1)
+
+    val res_table = ci_n.join(an_f).map(x => (x._2._2, x._2._1))
+    val res = res_table.reduce((a, b) =>(min_s(a._1,b._1), min_s(a._2, b._2)))
+    List(res._1, res._2)
+  }
+
   def init_table(s: String): Unit = {
     s match {
       case "q1" => ct.count(); it.count(); mc.count(); mi_idx.count(); mc.count()
@@ -210,6 +263,8 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case "q4" => it.count(); k.count(); mi_idx.count(); mk.count(); t.count();
       case "q5" => mi.count(); t.count(); mc.count(); ct.count(); it.count();
       case "q6" => k.count(); n.count(); t.count(); mk.count(); ci.count();
+      case "q7" => an.count(); ci.count(); it.count(); lt.count(); ml.count(); n.count(); pi.count(); t.count();
+      case "q8" => an.count(); ci.count(); cn.count(); mc.count(); n.count(); rt.count(); t.count();
       case _ => ???
     }
   }
@@ -224,6 +279,8 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case "q4" => q4
       case "q5" => q5
       case "q6" => q6
+      case "q7" => q7
+      case "q8" => q8
       case _ => () => ???
     }
   }

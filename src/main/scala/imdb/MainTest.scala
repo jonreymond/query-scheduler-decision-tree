@@ -21,58 +21,40 @@ object MainTest {
 
   def main(args: Array[String]) {
     val numPartitions = 16
-//    val stream = List(
-//      "q1", "q1", "q5", "q6",
-//      "q1", "q1", "q5", "q6")
+
     val stream = List(
       "q3", "q4", "q5", "q6",
       "q3", "q4", "q5", "q6",
       "q3", "q4", "q5", "q6",
       "q3", "q4", "q5", "q6")
-//    val stream = List(
-//      "q1", "q1", "q1", "q1",
-//      "q1", "q1", "q1", "q1",
-//      "q1", "q1", "q1", "q1",
-//      "q1", "q1", "q1", "q1")
 
 
-
-    val d = new DecisionTree(stream)
-    //value to multiply to not get E notation
-
-    val probas = d.getProbas()
-
-    println(toPythonListString(probas))
-    println(toPythonListString(stream))
-
-
-    var command = "python src/main/python/schedule_optimizer.py"
-    command = command + " --queries " + toPythonListString(stream)
-    command = command + " --num_partitions 16"
-    command = command + " --probas " + toPythonListString(probas)
-    println(command)
-
-
-    val test2:String = command.!!
-
-    println(test2)
-//      val groups = test2.split(';').toList
-//      val res = groups.map(x=> x.split(';').toList)
-//      println(res)
-
-//    val list_queries_tree = List("q2", "q3", "q6", "q1", "q4", "q3", "q5",
-//      "q11","q11","q11","q11","q11","q11","q11","q11")
-
-
-
-
-//    val stream_runs = stream.map(Runner.load_runtime(_, numPartitions))
+    Runner.process("q7", 16, 1)
+    println("achieved")
+//    val stream_test = List("q7")
+//    val stream_runs = stream_test.map(Runner.load_runtime(_, numPartitions))
 //    assert(stream_runs.forall(_._2 == stream_runs(0)._2))
+
+
+//    val d = new DecisionTree(stream)
+//    //random proba
+//    val probas = d.getProbas()
+//
+//    var command = "python src/main/python/schedule_optimizer.py"
+//    command = command + " --queries " + toPythonListString(stream)
+//    command = command + " --num_partitions 16"
+//    command = command + " --probas " + toPythonListString(probas)
+//    println(command)
+//    //get result of execution
+//    val test2:String = command.!!
+//
+//    val groups = test2.split(';').toList
+//    val res = groups.map(x=> x.split(';').toList)
+//    println(res)
+
+
+
 //    val num_cores = stream_runs(0)._2
-
-
-
-
 
 //    val date = new DateTime()
 //    println(date.toString())
@@ -133,70 +115,4 @@ object MainTest {
 
 
   }
-
-
-//  def main2(args: Array[String]) {
-//    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
-//    val sc = SparkContext.getOrCreate(conf)
-//    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-//
-//    val corpus_file_name_l = List(
-//      "1",
-//      "10"
-//      , "20")
-//    val query_file_name_l = List(
-//      "2",
-//      "10")
-//    val skew_name_l = List("", "-skew")
-//
-//
-//    var time_l = Map[Int, List[Double]](
-//      0 -> List(),
-//      1 -> List(), 2 -> List())
-//
-//    var i = 0
-//    var j = 0
-//    var k = 0
-//    var title = ""
-//    for(c <- corpus_file_name_l){
-//      val corpus_file = new File(getClass.getResource("/corpus-" + c + ".csv/part-00000").getFile).getPath
-//      val rdd_corpus = to_rdd(sc, corpus_file, 1)
-//      print(rdd_corpus.sample(false,0.01).collectAsMap())
-//      val construction_l = Map(
-//        1 -> new BaseConstructionBroadcast(sqlContext, rdd_corpus, 2),
-//        2 -> new BaseConstructionBroadcast(sqlContext, rdd_corpus, 3))
-//
-//      for(sk <- skew_name_l){
-//        for(q <- query_file_name_l){
-//
-//          title = title + "c" + c + "_q" + q + sk + ","
-//          val query_file = new File(getClass.getResource("/queries-"+c+"-"+q+sk+".csv/part-00000").getFile).getPath
-//          val rdd_query = to_rdd(sc, query_file, 0.05)
-//          val t1 = System.nanoTime
-////          val res_exact = exact_nn.eval(rdd_query).persist()
-////          res_exact.count()
-//          val duration1 = (System.nanoTime - t1) / 1e9d
-//          time_l = time_l + (0 -> (time_l(0) :+ duration1))
-//
-//          for(c_id <- 1 to 2){
-//            val t = System.nanoTime
-//            val res = construction_l(c_id).eval(rdd_query)
-//            res.count()
-//            val duration = (System.nanoTime - t) / 1e9d
-//            time_l = time_l + (c_id -> (time_l(c_id) :+ duration))
-//          }
-//          i += 1
-//          println(i + " skew over 2")
-//          print_results(time_l, title)
-//        }
-//        i = 0
-//        j += 1
-//        println(j + " query over 2")
-//      }
-//      i = 0
-//      j = 0
-//      k += 1
-//      println(k + " corpus over 2")
-//    }
-//  }
 }
