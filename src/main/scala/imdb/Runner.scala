@@ -57,9 +57,8 @@ object Runner {
    */
   def process(queryName: String, numPartitions: Int = 16, numMeasurements: Int = 4): Unit = {
 
-//    TODO :undo
-//    val num_core_l = List(1, 2, 4, 8, 16)
-    val num_core_l = List(8)
+
+    val num_core_l = List(1, 2, 4, 8, 16)
 
     val writer = CSVWriter.open(new File(STORE_PATH + queryName + ".csv"))
     writer.writeRow(List("num_cores", numPartitions))
@@ -73,8 +72,7 @@ object Runner {
 
       rdd_list.foreach(_.repartition(numPartitions))
       val queryHandler = new QueryHandler(rdd_list)
-      //    TODO :undo
-//      queryHandler.init_table(queryName)
+      queryHandler.init_table(queryName)
 
       val measurements = (1 to numMeasurements).map(_ => timingInMs(queryHandler.get(queryName)))
       val result = measurements(0)._1

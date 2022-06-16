@@ -22,14 +22,11 @@ object MainTest {
   def main(args: Array[String]) {
     val numPartitions = 16
 
-    val stream = List(
-      "q3", "q4", "q5", "q6",
-      "q3", "q4", "q5", "q6",
-      "q3", "q4", "q5", "q6",
-      "q3", "q4", "q5", "q6")
+    val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8")
 
 
-    Runner.process("q7", 16, 1)
+
+    stream.map(Runner.process(_, 16, 1))
     println("achieved")
 //    val stream_test = List("q7")
 //    val stream_runs = stream_test.map(Runner.load_runtime(_, numPartitions))
@@ -53,63 +50,6 @@ object MainTest {
 //    println(res)
 
 
-
-//    val num_cores = stream_runs(0)._2
-
-//    val date = new DateTime()
-//    println(date.toString())
-//    val day = date.day.get()+ "." + date.month.get() + "."+ date.year.get()
-//    val time = "_" + date.hour.get() + "h" +date.minute.get()
-
-
-
-
-//    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
-//    val sc = SparkContext.getOrCreate(conf)
-//
-
-//    sc.stop()
-
-
-//    val num_core_l = List(2,4,8,16,32,64,128,256,512,1024)
-//    val num_core_l = List(4)
-//    val numPartitions_l = List(8)
-//    val num_measurements = 1
-//    val q_list = List(
-//      "q1"//,
-////      "q2",
-////      "q3",
-////      "q4",
-////      "q5"
-//      )
-//    println(Runtime.getRuntime.availableProcessors())
-//
-//    num_core_l.foreach { num_core =>
-//
-//      println(num_core)
-//      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
-//      val sc = SparkContext.getOrCreate(conf)
-//      val rdd1 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
-////      val rdd2 = load(sc, "name", num_core).asInstanceOf[RDD[Name]]
-//      val begin = System.nanoTime()
-//      rdd1.count()
-//      val end = System.nanoTime()
-//      println(end - begin)
-//
-//      sc.stop()
-//    }
-
-
-
-//    val conf = new SparkConf().setAppName("app").setMaster("local[*]")
-//    val sc = SparkContext.getOrCreate(conf)
-//    println("Default parallelism: " + sc.defaultParallelism)
-//    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-//
-//
-//    val rdd_k = load(sc, "keyword", 4).asInstanceOf[RDD[Keyword]]
-////    println(rdd_k.getNumPartitions)
-//    println(rdd_k.takeSample(withReplacement = false,2).toList)
 
 
 

@@ -11,6 +11,8 @@ MODEL_STATUS = ["UNKNOWN", "MODEL_INVALID", "FEASIBLE", "IN-FEASIBLE", "OPTIMAL"
 Initialize matrix T of runtime foreach query :
 T_ij = runtime of query i with j cores
 '''
+
+
 def init_matrix(q_list, res, C, precision):
     Q = len(q_list)
     T = np.zeros((Q, C))
@@ -34,10 +36,10 @@ def init_variables(model, T, Q, C, R, num_paths=None):
 
     if num_paths is None:
         return V, I, X, k, t_ind, A, None
-    else :
+    else:
         V_bool = {(q, r): model.NewBoolVar(f'V_bool_{q},{r}') for q in range(Q) for r in range(R)}
         index_run = {q: model.NewIntVar(0, R - 1, f'index_run_{q}') for q in range(Q)}
-        #TODO :check if can reduce range
+        # TODO :check if can reduce range
         runtime_runs = {r: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_r_{r}') for r in range(R)}
 
         runtime_queries = {q: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_q_{q}') for q in range(Q)}
@@ -45,7 +47,7 @@ def init_variables(model, T, Q, C, R, num_paths=None):
         return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths)
 
 
-def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, reg_factor = None):
+def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, reg_factor=None):
     (V, I, X, k, t_ind, A, remain) = variables
     # 1
     for q in range(Q):
@@ -66,34 +68,34 @@ def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, 
         model.AddMaxEquality(k[r], [t_ind[q, r] for q in range(Q)])
 
     obj = sum(k[r] for r in range(R))
-    if proba_variables is not None :
+    if proba_variables is not None:
         obj = define_proba_program(model, variables, Q, R, proba_variables, reg_factor)
 
     model.Minimize(obj)
 
 
 def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
-    #Get index of which run each query is
+    # Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
     V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
     probas, num_paths, path_sets_idx = proba_variables
     for q in range(Q):
         for r in range(R):
-            model.Add(V[q,r] > 0).OnlyEnforceIf(V_bool[q,r])
-            model.Add(V[q,r] == 0).OnlyEnforceIf(V_bool[q,r].Not())
+            model.Add(V[q, r] > 0).OnlyEnforceIf(V_bool[q, r])
+            model.Add(V[q, r] == 0).OnlyEnforceIf(V_bool[q, r].Not())
 
     for q in range(Q):
-        model.Add(index_run[q]==0).OnlyEnforceIf([V_bool[q,r].Not() for r in range(R)])
+        model.Add(index_run[q] == 0).OnlyEnforceIf([V_bool[q, r].Not() for r in range(R)])
         for r in range(R):
-            model.Add(index_run[q]== r).OnlyEnforceIf(V_bool[q,r])
+            model.Add(index_run[q] == r).OnlyEnforceIf(V_bool[q, r])
 
-    #Get runtime of each run
+    # Get runtime of each run
     for r in range(R):
         model.Add(runtime_runs[r] == sum(k[rr] for rr in range(r + 1)))
-    #Get runtime of each query
+    # Get runtime of each query
     for q in range(Q):
         model.AddElement(index_run[q], runtime_runs, runtime_queries[q])
-    #Set path runtime
+    # Set path runtime
     for (id_p, path_set) in enumerate(path_sets_idx):
         model.AddMaxEquality(runtime_paths[id_p], [runtime_queries[q] for q in path_set])
 
@@ -107,7 +109,7 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_fa
     model = cp_model.CpModel()
     if proba_variables is None:
         variables = init_variables(model, T, Q, C, R)
-    else :
+    else:
         _, num_paths, _ = proba_variables
         variables = init_variables(model, T, Q, C, R, num_paths)
 
@@ -153,16 +155,57 @@ def get_program_results(status, solver, R, variables, q_list, precision, name_qu
         runtime, res_schedule = -1, []
     return runtime, res_schedule
 
-def split(q_list, res, C, precision):
+
+def compute_result(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_factor=None):
+    process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables, reg_factor)
+    return get_program_results(*x, name_queries=False)
+
+
+def rearrange_queries_probas(q_list, q_left, q_right, proba_variables):
+    _, _, path_sets_idx = proba_variables
+    left_queries = set(q_left)
+    right_queries = set(q_right)
+    # 1. split paths : determine which belong only to left
+    left_paths = []
+    right_paths_raw = []
+    for p in path_sets_idx:
+        intersect = p.intersection(right_queries)
+        if len(intersect) == 0:
+            left_paths.append(p)
+        else:
+            right_paths_raw.append(p)
+
+    # 2. select queries appearing only in right paths
+    remain_queries = left_queries.intersection(set.union(*left_paths))
+    left_queries = left_queries.difference(remain_queries)
+    right_queries = right_queries.union(remain_queries)
+
+    # 3. redefine paths right containing queries in left
+    right_paths = []
+    for p in right_paths_raw:
+        new_p = right_queries.intersection(p)
+        right_paths.append(new_p)
+
+    # 4. redefine left and right q_list
+    q_list_left = [q_list[i] for i in sorted(left_queries)]
+    q_list_right = [q_list[i] for i in sorted(right_queries)]
+    return (q_list_left, left_paths), (q_list_right, right_paths)
+
+
+def split(q_list, res, C, precision, proba_variables=None, reg_factor=None):
     if len(q_list) > MAX_LEN_QUERIES:
         R = 2
         Q = len(q_list)
         C_ = 2 * Q
-        process_time, _, res_schedule = optimize(q_list, res, C, R, precision, C_)
+        process_time, res_schedule = compute_result(q_list, res, C, R, C_, precision, proba_variables, reg_factor)
         q_left, runtime_left = split([x[0] for x in res_schedule[0]], res, C, precision)
         q_right, runtime_right = split([x[0] for x in res_schedule[1]], res, C, precision)
 
-        return q_left + q_right, process_time + runtime_right + runtime_left
+        total_time = process_time + runtime_right + runtime_left
+        if proba_variables is None:
+            return q_left + q_right, total_time
+        else:
+            return rearrange_queries_probas(q_list, q_left, q_right, proba_variables), total_time
     else:
         return [q_list], 0
 
