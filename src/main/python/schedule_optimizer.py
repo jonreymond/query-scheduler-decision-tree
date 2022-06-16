@@ -5,7 +5,6 @@ from datetime import datetime
 import click
 import matplotlib.pyplot as plt
 import numpy as np
-import cvxpy as cp
 import utils
 import cp_optimizer
 import ast
