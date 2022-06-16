@@ -27,8 +27,8 @@ def init_variables(model, T, Q, C, R, num_paths=None):
     V = {(q, r): model.NewIntVar(0, C, f'V_{q},{r}') for q in range(Q) for r in range(R)}
     I = {(q, r): model.NewIntVar(0, R - 1, f'I_{q},{r}') for q in range(Q) for r in range(R)}
     X = {q: model.NewIntVar(1, C, f'X_{q}') for q in range(Q)}
-    k = {r: model.NewIntVar(0, T.max(), f'k_{r}') for r in range(R)}
-    t_ind = {(q, r): model.NewIntVar(0, T.max(), f't_ind_{q},{r}') for q in range(Q) for r in range(R)}
+    k = {r: model.NewIntVar(0, int(T.max()), f'k_{r}') for r in range(R)}
+    t_ind = {(q, r): model.NewIntVar(0, int(T.max()), f't_ind_{q},{r}') for q in range(Q) for r in range(R)}
 
     A = np.zeros((Q, R)).astype(int).astype(object)
     for q in range(Q):
