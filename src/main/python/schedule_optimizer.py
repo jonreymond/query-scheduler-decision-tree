@@ -6,7 +6,6 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import cvxpy as cp
 import utils
 import cp_optimizer
 import ast
@@ -51,15 +50,16 @@ if __name__ == "__main__":
 
 
     # runtime example without split#
-    q_list = ["q1", "q3", "q2", "q4","q2", "q5", "q6"]
+    q_list = ["q1", "q3", "q2", "q4","q2", "q5"]
     df_queries = utils.load(q_list, num_partitions='16')
     res = utils.interpolate(df_queries)
     precision = 10
     C =16
     Q = len(q_list)
     R = int(round(Q / 2))
-    result = cp_optimizer.optimize(q_list, res, C, R, precision)
-    print(result)
+
+    runtime, res_schedule = cp_optimizer.compute_result(q_list, res, C, R, precision)
+    print(runtime, res_schedule)
 
 
     # Split example #
