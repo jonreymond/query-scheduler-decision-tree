@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import sys
 from scipy.interpolate import interp1d
 import math
@@ -11,42 +10,36 @@ path = "../resources/results/"
 
 def load_col(filename, num_partitions, other_path=""):
     if other_path == "":
-        df_raw = pd.read_csv(path + filename)
+        res = np.genfromtxt(path + filename, delimiter=',', dtype=str)
     else:
-        df_raw = pd.read_csv(other_path + filename)
-    partitions = np.array(df_raw.columns[1:])
-    df = df_raw.copy()
-    df[partitions] = df_raw[partitions] / 1000
-    df["num_cores"].astype('string') + " cores"
-    return df[num_partitions], df['num_cores']
+        res = np.genfromtxt(other_path + filename, delimiter=',', dtype=str)
+
+    bool_idx = np.tile(res[0,:] == num_partitions, res.shape[0]).reshape(res.shape)
+    time_col = res[bool_idx][1:].astype(float) / 1000
+    cores = res[1:, 0].astype(int)
+    return dict(zip(cores, time_col))
 
 
 def load(queries: str, num_partitions: str, other_path=""):
-    query_names = pd.Series(sorted(list(set(queries))))
+    query_names = np.array(sorted(list(set(queries))), dtype=str)
     date = ""
-    filenames = query_names + date + ".csv"
-    df = pd.DataFrame()
-    for i in range(len(filenames)):
-        res, index = load_col(filenames[i], num_partitions)
-        if i == 0 :
-            df['num_cores'] = index
-        df[query_names[i]] = res
-    return df
+    dict_q_res = {}
+    for i in range(len(query_names)):
+        time= load_col(query_names[i] + date + ".csv", num_partitions)
+        dict_q_res.update({query_names[i] : time})
+    return dict_q_res
 
 
-def interpolate(df):
-    x = df['num_cores']
-    names = list(df.columns.values)[1:]
+def interpolate(dict_q_res):
+    #cores
+    x = list(list(dict_q_res.values())[0].keys())
+
     res = {}
-    for n in names:
-        f = interp1d(x, df[n], kind="linear")
-        res.update({n: f})
+    for q_key in dict_q_res:
+        time_q = list(dict_q_res[q_key].values())
+        f = interp1d(x, time_q, kind="linear")
+        res.update({q_key: f})
     return res
-
-
-def interpolate_discrete(df, C):
-    res = interpolate(df)
-    dict_res = {}
 
 
 def get_path_sets(q_list):

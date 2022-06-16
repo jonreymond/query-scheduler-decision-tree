@@ -5,10 +5,10 @@ from datetime import datetime
 import click
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import utils
 import cp_optimizer
 import ast
+
 
 
 class PythonLiteralOption(click.Option):
