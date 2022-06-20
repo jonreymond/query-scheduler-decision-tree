@@ -59,7 +59,7 @@ object Runner {
    */
   def process(queryName: String, numPart: Int = 64, numMeasurements: Int = 4): Unit = {
 
-    val num_core_l = List(4, 8, 16)
+    val num_core_l = List(1, 2, 4, 8, 16)
     var i = 1
     var numPartitions_l : List[Int] = List()
     while(i <= numPart){
