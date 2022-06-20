@@ -24,9 +24,13 @@ object MainTest {
 
     val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8")
 
+<<<<<<< HEAD
 
 
     stream.map(Runner.load_runtime(_, 16))
+=======
+    stream.map(Runner.process(_))
+>>>>>>> 1ad75cae19158d44bf186bcfa53b7f2493231db9
     println("achieved")
 //    val stream_test = List("q7")
 //    val stream_runs = stream_test.map(Runner.load_runtime(_, numPartitions))
