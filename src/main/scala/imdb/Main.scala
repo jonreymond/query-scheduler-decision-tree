@@ -80,12 +80,11 @@ object Main {
           val avg_timing = measurements.map(t => t._2).sum / num_measurements
 
           println(q + "  num_core : " + num_core + " num_partitions : " + numPartitions + " ")
-          Thread.sleep(10000)
+          Thread.sleep(5000)
           avg_timing
         }
         writers(q).writeRow(List(num_core) ++ results)
       }
-
       sc.stop()
     }
     writers.foreach(_._2.close())

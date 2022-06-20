@@ -10,7 +10,7 @@ import java.io.File
 
 
 package object imdb {
-  val STORE_PATH = "src/main/resources/results/"
+  val STORE_PATH = "src/main/resources/results/final/"
 
   val NAMES = List(
     "aka_name",

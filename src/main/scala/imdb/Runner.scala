@@ -11,17 +11,18 @@ object Runner {
    *
    * @param queryName : name of query
    * @param numPartitions : the results for the desired number of partitions
+   * @param numPartitions : number of repetitions if needed to measure
    * @return : map of numCore -> runtime,
    *           number of cores
    */
-  def load_runtime(queryName: String, numPartitions: Int): (List[(Int, Double)], Int) = {
+  def load_runtime(queryName: String, numPartitions: Int = 64, numMeasurements : Int = 4): (List[(Int, Double)], Int) = {
     try {
       val reader = CSVReader.open(new File(STORE_PATH + queryName + ".csv"))
       reader.close()
     }
     catch {
       case _ => println(queryName + " not processed, process in progress...")
-                process(queryName)
+                process(queryName, numPartitions, numMeasurements)
     }
     val reader = CSVReader.open(new File(STORE_PATH + queryName + ".csv"))
 
@@ -48,41 +49,49 @@ object Runner {
     (result, result.last._1)
   }
 
+
   /**
    * Evaluate query runtime
    *
    * @param queryName       : name of query
-   * @param numPartitions   : number of partitions used to measure
+   * @param numPartitions   : number of partitions used to measure => [1, 2, 4,..., numPartitions]
    * @param numMeasurements : number of runs
    */
-  def process(queryName: String, numPartitions: Int = 16, numMeasurements: Int = 4): Unit = {
+  def process(queryName: String, numPart: Int = 64, numMeasurements: Int = 4): Unit = {
 
-
-    val num_core_l = List(1, 2, 4, 8, 16)
+    val num_core_l = List(4, 8, 16)
+    var i = 1
+    var numPartitions_l : List[Int] = List()
+    while(i <= numPart){
+      numPartitions_l = numPartitions_l :+ i
+      i *= 2
+    }
 
     val writer = CSVWriter.open(new File(STORE_PATH + queryName + ".csv"))
-    writer.writeRow(List("num_cores", numPartitions))
+    writer.writeRow(List("num_cores") ++ numPartitions_l)
 
     num_core_l.foreach { num_core =>
 
       val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
       val sc = SparkContext.getOrCreate(conf)
-      val rdd_list = NAMES.map(load(sc, _, num_core)) //.map(_.persist())
-      //      rdd_list.foreach(x => println(x.count()))
+      val rdd_list = NAMES.map(load(sc, _, num_core))
 
-      rdd_list.foreach(_.repartition(numPartitions))
-      val queryHandler = new QueryHandler(rdd_list)
-      queryHandler.init_table(queryName)
+      val results = numPartitions_l.map{ numPartitions =>
+        rdd_list.foreach(_.repartition(numPartitions))
+        val queryHandler = new QueryHandler(rdd_list)
+        queryHandler.init_table(queryName)
 
-      val measurements = (1 to numMeasurements).map(_ => timingInMs(queryHandler.get(queryName)))
-      val result = measurements(0)._1
-      println(result)
-      val avg_timing = measurements.map(t => t._2).sum / numMeasurements
+        val measurements = (1 to numMeasurements).map(_ => timingInMs(queryHandler.get(queryName)))
+        val result = measurements(0)._1
+        println(result)
+        val avg_timing = measurements.map(t => t._2).sum / numMeasurements
 
-      println(queryName + "  num_core : " + num_core + " num_partitions : " + numPartitions + " ")
-      Thread.sleep(10000)
+        println(queryName + "  num_core : " + num_core + " num_partitions : " + numPartitions + " ")
+        Thread.sleep(5000)
+        avg_timing
+    }
 
-      writer.writeRow(List(num_core, avg_timing))
+      writer.writeRow(List(num_core) ++ results)
       sc.stop()
     }
     writer.close()
