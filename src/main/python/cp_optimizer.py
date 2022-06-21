@@ -6,7 +6,7 @@ import utils
 # maximal length algorithm can scale
 MAX_LEN_QUERIES = 9
 MODEL_STATUS = ["UNKNOWN", "MODEL_INVALID", "FEASIBLE", "IN-FEASIBLE", "OPTIMAL"]
-normal_exec = False
+# normal_exec = False
 
 '''
 Initialize matrix T of runtime foreach query :
@@ -56,7 +56,7 @@ def init_variables(model, T, Q, C, R, proba_variables=None):
         return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path)
 
 
-def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, reg_factor=None):
+def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, normal_exec=True, reg_factor=None):
     (V, I, X, k, t_ind, A, remain) = variables
     # 1
     for q in range(Q):
@@ -78,12 +78,12 @@ def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, 
 
     obj = sum(k[r] for r in range(R))
     if proba_variables is not None:
-        obj = define_proba_program(model, variables, Q, R, proba_variables, reg_factor)
+        obj = define_proba_program(model, variables, Q, R, proba_variables, normal_exec, reg_factor)
 
     model.Minimize(obj)
 
 
-def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
+def define_proba_program(model, variables, Q, R, proba_variables, normal_exec=True, reg_factor=None):
     # Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
     #CP variables for probability case
@@ -113,8 +113,10 @@ def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
         model.AddMaxEquality(runtime_paths[id_p], [runtime_queries[q] for q in path_set])
 
     if normal_exec:
+        print("normal exec")
         obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths))
     else :
+        print("alternative exec")
         model.AddMaxEquality(max_runtime_path, [probas_int[p] * runtime_paths[p] for p in range(num_paths)])
         obj = max_runtime_path
 
@@ -123,16 +125,16 @@ def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
     return obj
 
 
-def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_factor=None):
+def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, normal_exec=True, reg_factor=None):
     Q = len(q_list)
     T = init_matrix(q_list, res, C, precision)
     model = cp_model.CpModel()
     if proba_variables is None:
-        variables = init_variables(model, T, Q, C, R, C_=C_)
+        variables = init_variables(model, T, Q, C, R)
     else:
         variables = init_variables(model, T, Q, C, R, proba_variables=proba_variables)
 
-    define_program(model, variables, T, Q, C, R, C_, proba_variables, reg_factor)
+    define_program(model, variables, T, Q, C, R, C_, proba_variables, normal_exec, reg_factor)
 
     start_time = time.time()
     solver = cp_model.CpSolver()
@@ -195,8 +197,8 @@ def model_to_solution(solver, R, variables, q_list, precision, name_queries=True
         return runtime / precision, res_schedule
 
 
-def compute_result(q_list, res, C, R, precision, name_queries=True, C_=None, split=False, proba_variables=None, reg_factor=None):
-    process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables, reg_factor)
+def compute_result(q_list, res, C, R, precision, name_queries=True, C_=None, split=False, proba_variables=None, normal_exec=True,reg_factor=None):
+    process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables,normal_exec, reg_factor)
     return process_time, model_to_solution(*x, name_queries=name_queries, proba_variables=proba_variables, split=split)
 
 
