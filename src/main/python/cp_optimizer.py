@@ -6,7 +6,7 @@ import utils
 # maximal length algorithm can scale
 MAX_LEN_QUERIES = 9
 MODEL_STATUS = ["UNKNOWN", "MODEL_INVALID", "FEASIBLE", "IN-FEASIBLE", "OPTIMAL"]
-normal_exec = True
+normal_exec = False
 
 '''
 Initialize matrix T of runtime foreach query :
@@ -24,7 +24,7 @@ def init_matrix(q_list, res, C, precision):
     return np.c_[np.zeros(T_int.shape[0]), T_int].astype(int)
 
 
-def init_variables(model, T, Q, C, R, num_paths=None):
+def init_variables(model, T, Q, C, R, proba_variables=None):
     V = {(q, r): model.NewIntVar(0, C, f'V_{q},{r}') for q in range(Q) for r in range(R)}
     I = {(q, r): model.NewIntVar(0, R - 1, f'I_{q},{r}') for q in range(Q) for r in range(R)}
     X = {q: model.NewIntVar(1, C, f'X_{q}') for q in range(Q)}
@@ -35,18 +35,23 @@ def init_variables(model, T, Q, C, R, num_paths=None):
     for q in range(Q):
         A[q, -1] = X[q]
 
-    if num_paths is None:
+    if proba_variables is None:
         return V, I, X, k, t_ind, A, None
     else:
+        probas, num_paths, _ = proba_variables
+        max_proba = max(utils.probas_to_int(probas))
         V_bool = {(q, r): model.NewBoolVar(f'V_bool_{q},{r}') for q in range(Q) for r in range(R)}
         index_run = {q: model.NewIntVar(0, int(R - 1), f'index_run_{q}') for q in range(Q)}
+
         # TODO :check if can reduce range : T.min()= 0 now
-        runtime_runs = {r: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_r_{r}') for r in range(R)}
+        min_time = int(0)
+        max_time = int(T.max() * R)
+        runtime_runs = {r: model.NewIntVar(min_time, max_time, f'run_r_{r}') for r in range(R)}
 
-        runtime_queries = {q: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_q_{q}') for q in range(Q)}
-        runtime_paths = {p: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_path_{q}') for p in range(num_paths)}
+        runtime_queries = {q: model.NewIntVar(min_time, max_time, f'run_q_{q}') for q in range(Q)}
+        runtime_paths = {p: model.NewIntVar(min_time, max_time, f'run_path_{q}') for p in range(num_paths)}
 
-        max_runtime_path = model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'max_run_path')
+        max_runtime_path = model.NewIntVar(min_time, int(max_time * max_proba), f'max_run_path')
 
         return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path)
 
@@ -123,10 +128,9 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_fa
     T = init_matrix(q_list, res, C, precision)
     model = cp_model.CpModel()
     if proba_variables is None:
-        variables = init_variables(model, T, Q, C, R)
+        variables = init_variables(model, T, Q, C, R, C_=C_)
     else:
-        _, num_paths, _ = proba_variables
-        variables = init_variables(model, T, Q, C, R, num_paths)
+        variables = init_variables(model, T, Q, C, R, proba_variables=proba_variables)
 
     define_program(model, variables, T, Q, C, R, C_, proba_variables, reg_factor)
 
@@ -134,7 +138,7 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_fa
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
     process_time = time.time() - start_time
-    assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE
+    assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE, "status is " + MODEL_STATUS[status]
     return process_time, (solver, R, variables, q_list, precision)
 
 
@@ -154,7 +158,9 @@ def print_proba_results(r):
 
 def model_to_solution(solver, R, variables, q_list, precision, name_queries=True, proba_variables=None, split=False):
     (V, I, X, k, t_ind, A, remain) = variables
-
+    if split:
+        name_queries = False
+        proba_variables = None
     if proba_variables is not None and not split:
         V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path = remain
         probas, num_paths, path_sets_idx = proba_variables
@@ -189,7 +195,7 @@ def model_to_solution(solver, R, variables, q_list, precision, name_queries=True
         return runtime / precision, res_schedule
 
 
-def compute_result(q_list, res, C, R, precision, name_queries=False, C_=None, split=False, proba_variables=None, reg_factor=None):
+def compute_result(q_list, res, C, R, precision, name_queries=True, C_=None, split=False, proba_variables=None, reg_factor=None):
     process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables, reg_factor)
     return process_time, model_to_solution(*x, name_queries=name_queries, proba_variables=proba_variables, split=split)
 
