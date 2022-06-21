@@ -62,7 +62,7 @@ def get_path_sets(q_list):
 
     return results[2**height - 1:]
 
-def probas_to_int(probas, num_decimals=4):
+def probas_to_int(probas, num_decimals):
     m = min(probas)
     i = 1
     while(m * 10**i < 1):

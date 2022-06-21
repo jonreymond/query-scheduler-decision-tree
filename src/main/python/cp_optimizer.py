@@ -6,6 +6,7 @@ import utils
 # maximal length algorithm can scale
 MAX_LEN_QUERIES = 9
 MODEL_STATUS = ["UNKNOWN", "MODEL_INVALID", "FEASIBLE", "IN-FEASIBLE", "OPTIMAL"]
+normal_exec = True
 
 '''
 Initialize matrix T of runtime foreach query :
@@ -38,13 +39,16 @@ def init_variables(model, T, Q, C, R, num_paths=None):
         return V, I, X, k, t_ind, A, None
     else:
         V_bool = {(q, r): model.NewBoolVar(f'V_bool_{q},{r}') for q in range(Q) for r in range(R)}
-        index_run = {q: model.NewIntVar(0, R - 1, f'index_run_{q}') for q in range(Q)}
-        # TODO :check if can reduce range
-        runtime_runs = {r: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_r_{r}') for r in range(R)}
+        index_run = {q: model.NewIntVar(0, int(R - 1), f'index_run_{q}') for q in range(Q)}
+        # TODO :check if can reduce range : T.min()= 0 now
+        runtime_runs = {r: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_r_{r}') for r in range(R)}
 
-        runtime_queries = {q: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_q_{q}') for q in range(Q)}
-        runtime_paths = {p: model.NewIntVar(T.min() * Q, T.max() * Q, f'run_path_{q}') for p in range(num_paths)}
-        return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths)
+        runtime_queries = {q: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_q_{q}') for q in range(Q)}
+        runtime_paths = {p: model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'run_path_{q}') for p in range(num_paths)}
+
+        max_runtime_path = model.NewIntVar(int(T.min() * Q), int(T.max() * Q), f'max_run_path')
+
+        return V, I, X, k, t_ind, A, (V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path)
 
 
 def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, reg_factor=None):
@@ -78,30 +82,39 @@ def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
     # Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
     #CP variables for probability case
-    V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
+    V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path = remain
     #fixed variables
     probas, num_paths, path_sets_idx = proba_variables
-    for q in range(Q):
-        for r in range(R):
-            model.Add(V[q, r] > 0).OnlyEnforceIf(V_bool[q, r])
-            model.Add(V[q, r] == 0).OnlyEnforceIf(V_bool[q, r].Not())
-
-    for q in range(Q):
-        model.Add(index_run[q] == 0).OnlyEnforceIf([V_bool[q, r].Not() for r in range(R)])
-        for r in range(R):
-            model.Add(index_run[q] == r).OnlyEnforceIf(V_bool[q, r])
-
-    # Get runtime of each run
+    probas_int = utils.probas_to_int(probas)
+    #Get runtime of each run
     for r in range(R):
         model.Add(runtime_runs[r] == sum(k[rr] for rr in range(r + 1)))
-    # Get runtime of each query
+
+    #Get index of which run each query is
     for q in range(Q):
-        model.AddElement(index_run[q], runtime_runs, runtime_queries[q])
-    # Set path runtime
+        for r in range(R):
+            model.Add(V[q,r] > 0).OnlyEnforceIf(V_bool[q,r])
+            model.Add(V[q,r] == 0).OnlyEnforceIf(V_bool[q,r].Not())
+
+    for q in range(Q):
+        # model.Add(index_run[q]==0).OnlyEnforceIf([V_bool[q,r].Not() for r in range(R)])
+        model.Add(runtime_queries[q]==0).OnlyEnforceIf([V_bool[q,r].Not() for r in range(R)])
+        for r in range(R):
+            # model.Add(index_run[q]== r).OnlyEnforceIf(V_bool[q,r])
+            model.Add(runtime_queries[q]== runtime_runs[r]).OnlyEnforceIf(V_bool[q,r])
+
+    #Set path runtime
     for (id_p, path_set) in enumerate(path_sets_idx):
         model.AddMaxEquality(runtime_paths[id_p], [runtime_queries[q] for q in path_set])
 
-    obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths)) + reg_factor * sum(k[r] for r in range(R))
+    if normal_exec:
+        obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths))
+    else :
+        model.AddMaxEquality(max_runtime_path, [probas_int[p] * runtime_paths[p] for p in range(num_paths)])
+        obj = max_runtime_path
+
+    #using reg_factor
+    # obj = obj + reg_factor * sum(k[r] for r in range(R))
     return obj
 
 
@@ -130,11 +143,20 @@ def get_proba_variables(q_list, probas):
     num_paths = len(path_sets_idx)
     return probas, num_paths, path_sets_idx
 
+def print_proba_results(r):
+    runtime, res_schedule, path_time, run_time, query_time = r
+    print("runtime : ", runtime)
+    print("schedule : ", res_schedule)
+    print()
+    print("path time : ", path_time)
+    print("runtime each batch: ", run_time)
+    print("query time : ", query_time)
 
-def model_to_solution(solver, R, variables, q_list, precision, name_queries=True, proba_variables=None):
+def model_to_solution(solver, R, variables, q_list, precision, name_queries=True, proba_variables=None, split=False):
     (V, I, X, k, t_ind, A, remain) = variables
-    V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
-    if proba_variables is not None:
+
+    if proba_variables is not None and not split:
+        V_bool, index_run, runtime_runs, runtime_queries, runtime_paths, max_runtime_path = remain
         probas, num_paths, path_sets_idx = proba_variables
 
     Q = len(q_list)
@@ -149,13 +171,13 @@ def model_to_solution(solver, R, variables, q_list, precision, name_queries=True
                 else:
                     run_r.append((q, q_r_val))
         if run_r:
-            if proba_variables is not None :
+            if proba_variables is not None and not split:
                 res_schedule.append((solver.Value(k[r])/ precision, run_r))
             else:
                 res_schedule.append(run_r)
     runtime = sum(solver.Value(k[r]) for r in range(R))
 
-    if proba_variables is not None :
+    if proba_variables is not None and not split:
         if name_queries :
             path_time = [([q_list[i] for i in list(path_sets_idx[p])], solver.Value(runtime_paths[p])/precision) for p in range(num_paths)]
         else :
@@ -167,9 +189,9 @@ def model_to_solution(solver, R, variables, q_list, precision, name_queries=True
         return runtime / precision, res_schedule
 
 
-def compute_result(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_factor=None):
+def compute_result(q_list, res, C, R, precision, name_queries=False, C_=None, split=False, proba_variables=None, reg_factor=None):
     process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables, reg_factor)
-    return process_time, model_to_solution(*x, name_queries=False, proba_variables=None)
+    return process_time, model_to_solution(*x, name_queries=name_queries, proba_variables=proba_variables, split=split)
 
 
 def rearrange_queries_probas(q_list, q_left, q_right, proba_variables):
