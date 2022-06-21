@@ -121,7 +121,8 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_fa
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
     process_time = time.time() - start_time
-    return process_time, (status, solver, R, variables, q_list, precision)
+    assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE
+    return process_time, (solver, R, variables, q_list, precision)
 
 
 def get_proba_variables(q_list, probas):
@@ -130,7 +131,12 @@ def get_proba_variables(q_list, probas):
     return probas, num_paths, path_sets_idx
 
 
-def model_to_solution(solver, R, V, k, q_list, precision, name_queries=True):
+def model_to_solution(solver, R, variables, q_list, precision, name_queries=True, proba_variables=None):
+    (V, I, X, k, t_ind, A, remain) = variables
+    V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
+    if proba_variables is not None:
+        probas, num_paths, path_sets_idx = proba_variables
+
     Q = len(q_list)
     res_schedule = []
     for r in range(R):
@@ -143,24 +149,27 @@ def model_to_solution(solver, R, V, k, q_list, precision, name_queries=True):
                 else:
                     run_r.append((q, q_r_val))
         if run_r:
-            res_schedule.append(run_r)
+            if proba_variables is not None :
+                res_schedule.append((solver.Value(k[r])/ precision, run_r))
+            else:
+                res_schedule.append(run_r)
     runtime = sum(solver.Value(k[r]) for r in range(R))
 
-    return runtime / precision, res_schedule
-
-
-def get_program_results(status, solver, R, variables, q_list, precision, name_queries=True):
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        (V, _, _, k, _, _, _) = variables
-        runtime, res_schedule = model_to_solution(solver, R, V, k, q_list, precision, name_queries)
+    if proba_variables is not None :
+        if name_queries :
+            path_time = [([q_list[i] for i in list(path_sets_idx[p])], solver.Value(runtime_paths[p])/precision) for p in range(num_paths)]
+        else :
+            path_time = [(path_sets_idx[p], solver.Value(runtime_paths[p])/precision) for p in range(num_paths)]
+        run_time = [solver.Value(runtime_runs[r])/precision for r in range(R)]
+        query_time = [solver.Value(runtime_queries[q])/precision for q in range(Q)]
+        return runtime / precision, res_schedule, path_time, run_time, query_time
     else:
-        runtime, res_schedule = -1, []
-    return runtime, res_schedule
+        return runtime / precision, res_schedule
 
 
 def compute_result(q_list, res, C, R, precision, C_=None, proba_variables=None, reg_factor=None):
     process_time, x = optimize(q_list, res, C, R, precision, C_, proba_variables, reg_factor)
-    return get_program_results(*x, name_queries=False)
+    return process_time, model_to_solution(*x, name_queries=False, proba_variables=None)
 
 
 def rearrange_queries_probas(q_list, q_left, q_right, proba_variables):
