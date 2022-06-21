@@ -25,10 +25,9 @@ object MainTest {
     val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8")
 
 
-//    stream.map(Runner.process(_))
+   stream.map(Runner.process(_))
     println("achieved")
 
-    Runner.process("q9", test = true)
 
 
 //    val d = new DecisionTree(stream)

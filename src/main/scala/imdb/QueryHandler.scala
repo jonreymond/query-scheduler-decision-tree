@@ -203,7 +203,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
   def q7(): List[Any] = {
     val an_f = an.filter(_.name.length > 10).map(_.person_id -> false)
     val it_f = it.filter(x => x.info == "mini biography" || x.info == "biographical movies").map(_.id -> false)
-    val n_f = n.filter(x => x.name_pcode_cf.length > 0 && x.gender == "m").map(x => x.id -> x.name)
+    val n_f = n.filter(x => x.name_pcode_cf.length > 0 && x.gender == "ms").map(x => x.id -> x.name)
     val pi_f = pi.filter(_.note.length > 200).map(x => x.info_type_id -> x.person_id)
     val t_f = t.filter(x => x.production_year >= 1980 && x.production_year < 1984).map(x => x.id -> x.title)
     val ci_f = ci.map(x => x.movie_id -> x.person_id)
