@@ -77,7 +77,9 @@ def define_program(model, variables, T, Q, C, R, C_=None, proba_variables=None, 
 def define_proba_program(model, variables, Q, R, proba_variables, reg_factor):
     # Get index of which run each query is
     (V, I, X, k, t_ind, A, remain) = variables
+    #CP variables for probability case
     V_bool, index_run, runtime_runs, runtime_queries, runtime_paths = remain
+    #fixed variables
     probas, num_paths, path_sets_idx = proba_variables
     for q in range(Q):
         for r in range(R):

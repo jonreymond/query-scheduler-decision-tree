@@ -61,3 +61,32 @@ def get_path_sets(q_list):
             results.append(right_set)
 
     return results[2**height - 1:]
+
+def probas_to_int(probas, num_decimals):
+    m = min(probas)
+    i = 1
+    while(m * 10**i < 1):
+        i += 1
+    probas_int = [int(pr * 10**(i + num_decimals)) for pr in probas]
+    return probas_int
+
+
+def print_tree(q_list, probas, index=False):
+    height = int(math.log2(len(q_list)))
+    if index :
+        q_list = [str(i) for i in range(len(q_list))]
+    proba_str = ""
+    for p in probas:
+        proba_str += str(round(p, 6)) + "   "
+    l = len(proba_str)
+    print(" "*int(l/2) + q_list[0] + "\n")
+
+    for i in range(height):
+        blank = " "*int(l/(2**(i + 1) + 1))
+        s = blank
+        for j in range(2**i):
+            idx_left = 2**(i + 1) + j*2 - 1
+            s += q_list[idx_left] + blank
+            s += q_list[idx_left + 1] + blank
+        print(s + "\n")
+    print(" "*int(l/(2**(i + 2) + 1)) + proba_str)

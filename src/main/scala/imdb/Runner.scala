@@ -56,18 +56,29 @@ object Runner {
    * @param queryName       : name of query
    * @param numPartitions   : number of partitions used to measure => [1, 2, 4,..., numPartitions]
    * @param numMeasurements : number of runs
+   * @param test : process to test the query
    */
-  def process(queryName: String, numPart: Int = 64, numMeasurements: Int = 4): Unit = {
+  def process(queryName: String, numPart: Int = 64, numMeasurements: Int = 4, test: Boolean = false): Unit = {
 
-    val num_core_l = List(1, 2, 4, 8, 16)
+
+    var num_core_l = List(1, 2, 4, 8, 16)
+
     var i = 1
     var numPartitions_l : List[Int] = List()
     while(i <= numPart){
       numPartitions_l = numPartitions_l :+ i
       i *= 2
     }
+    var numMeasure = numMeasurements
+    var suffix = ""
+    if(test){
+      suffix = "_test"
+      num_core_l = List(4,8)
+      numPartitions_l = List(8, 16)
+      numMeasure = 2
+    }
 
-    val writer = CSVWriter.open(new File(STORE_PATH + queryName + ".csv"))
+    val writer = CSVWriter.open(new File(STORE_PATH + queryName + suffix + ".csv"))
     writer.writeRow(List("num_cores") ++ numPartitions_l)
 
     num_core_l.foreach { num_core =>
@@ -81,10 +92,10 @@ object Runner {
         val queryHandler = new QueryHandler(rdd_list)
         queryHandler.init_table(queryName)
 
-        val measurements = (1 to numMeasurements).map(_ => timingInMs(queryHandler.get(queryName)))
+        val measurements = (1 to numMeasure).map(_ => timingInMs(queryHandler.get(queryName)))
         val result = measurements(0)._1
         println(result)
-        val avg_timing = measurements.map(t => t._2).sum / numMeasurements
+        val avg_timing = measurements.map(t => t._2).sum / numMeasure
 
         println(queryName + "  num_core : " + num_core + " num_partitions : " + numPartitions + " ")
         Thread.sleep(5000)

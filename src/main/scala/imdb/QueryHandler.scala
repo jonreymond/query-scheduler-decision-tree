@@ -1,5 +1,4 @@
 package imdb
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 class QueryHandler(rdd_list : List[RDD[Record]]) {
@@ -255,6 +254,26 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
     List(res._1, res._2)
   }
 
+  def q9(): List[Any] = {
+    val ct_f = ct.map(x => x.id -> x.kind)
+    val it_f = it.filter(_.info == "bottom 10 rank").map(x => x.id -> false)
+    val t_f = t.filter(x => x.production_year >= 2005 && x.production_year < 2010).map(x => x.id -> x.title)
+    val mc_f = mc.map(x => x.company_type_id -> (x.movie_id -> x.id))
+    val mi_idx_f = mi_idx.map(x => x.info_type_id -> x.movie_id)
+
+    //mi_idx_movie -> false
+    val it_mi_idx = it_f.join(mi_idx_f).map(x => x._2._2-> false)
+    //mc.movie_id -> mc.id
+    val ct_mc = ct_f.join(mc_f).map(x => x._2._2._1 -> (x._2._1, x._2._2._2))
+    //mc.movie_id == mi_idx.movie_id -> (ct.kind , mc_id)
+    val mc_mi_idx = it_mi_idx.join(ct_mc).map(x => x._1 -> x._2._2)
+    //ct.kind -> (mc.id, t.title)
+    val join_res = mc_mi_idx.join(t_f).map(x => x._2._1._1 -> (x._2._1._2 , x._2._2))
+
+    val res = join_res.reduceByKey((x, y) => (Math.min(x._1, y._1), min_s(x._2, y._2))).map(_._2).collect().toList
+    res
+  }
+
   def init_table(s: String): Unit = {
     s match {
       case "q1" => ct.count(); it.count(); mc.count(); mi_idx.count(); mc.count()
@@ -265,6 +284,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case "q6" => k.count(); n.count(); t.count(); mk.count(); ci.count();
       case "q7" => an.count(); ci.count(); it.count(); lt.count(); ml.count(); n.count(); pi.count(); t.count();
       case "q8" => an.count(); ci.count(); cn.count(); mc.count(); n.count(); rt.count(); t.count();
+      case "q9" => ct.count(); it.count(); t.count(); mc.count(); mi_idx.count();
       case _ => ???
     }
   }
@@ -281,6 +301,7 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
       case "q6" => q6
       case "q7" => q7
       case "q8" => q8
+      case "q9" => q9
       case _ => () => ???
     }
   }
@@ -297,62 +318,3 @@ class QueryHandler(rdd_list : List[RDD[Record]]) {
 //    }
 //  }
 }
-
-
-
-//class Q2(cn: RDD[Company_name],
-//         k: RDD[Keyword],
-//         mc: RDD[Movie_companies],
-//         mk: RDD[Movie_keyword],
-//         t: RDD[Title]) extends Query {
-//  override def execute(): (List[Any]) = {
-//    val cn_f = cn.filter(_.country_code =="[de]").map(_.id -> false)
-//    val k_f = k.filter(_.word == "character-name-in-title").map(_.id -> false)
-//    val mc_f = mc.map(x => x.company_id -> x.movie_id)
-//    val mk_f = mk.map(x => x.movie_id -> x.word_id)
-//    val t_f = t.map(x => x.id -> x.title)
-//
-//    // mc.movie_id -> 0
-//    val join1 = cn_f.join(mc_f).map(x => x._2._2 -> 0)
-//    // t.id = mc.movie_id -> t.title
-//    val join2 = join1.join(t_f).map(x => x._1 -> x._2._2)
-//    // t.id = mc.movie_id = mk.movie_id -> (t.title, mk.word_id)
-//    val join3 = join2.join(mk_f)
-//    val table_res = join3.join(k_f).map(x => x._2._1._1)
-//
-//    val res = table_res.reduce(min_s(_,_))
-//    List(res)
-//  }
-//}
-
-
-//class Q5(ct: RDD[Company_type],
-//         it: RDD[Info_type],
-//         mc: RDD[Movie_companies],
-//         mi: RDD[Movie_info],
-//         t: RDD[Title]) extends Query {
-//  override def execute(): (List[Any]) = {
-//
-//    val mi_f = mi.filter(x => List("Sweden", "Norway", "Germany", "Denmark",
-//                              "Swedish", "Denish", "Norwegian", "German").contains(x.info))
-//                                .map(x => x.info_type_id -> x.movie_id)
-//
-//    val t_f = t.filter(_.production_year > 2005).map(x => x.id -> x.title)
-//    val mc_f = mc.filter(x => x.note.contains("(theatrical") && x.note.contains("(France)"))
-//                  .map(x => x.company_type_id -> x.movie_id)
-//    val ct_f = ct.filter(_.kind == "production companies").map(_.id -> false)
-//    val it_f = it.map(_.id -> false)
-//
-//    //mi_movie_id -> false
-//    val mi_it_j = mi_f.join(it_f).map(_._2._1 -> false)
-//    //mc.movie_id -> false
-//    val mc_ct_j = mc_f.join(ct_f).map(_._2._1 -> false)
-//    //mi_movie_id  = mc.movie_id -> false
-//    val join1 = mi_it_j.join(mc_ct_j).map(_._1 -> false)
-//
-//    val res_table = t_f.join(join1).map(_._2._1)
-//    val res = res_table.reduce(min_s(_,_))
-//
-//    List(res)
-//  }
-//}
