@@ -113,10 +113,10 @@ def define_proba_program(model, variables, Q, R, proba_variables, normal_exec=Tr
         model.AddMaxEquality(runtime_paths[id_p], [runtime_queries[q] for q in path_set])
 
     if normal_exec:
-        print("normal exec")
+        # print("normal exec")
         obj = sum(probas[p] * runtime_paths[p] for p in range(num_paths))
     else :
-        print("alternative exec")
+        # print("alternative exec")
         model.AddMaxEquality(max_runtime_path, [probas_int[p] * runtime_paths[p] for p in range(num_paths)])
         obj = max_runtime_path
 
@@ -144,19 +144,7 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, normal
     return process_time, (solver, R, variables, q_list, precision)
 
 
-def get_proba_variables(q_list, probas):
-    path_sets_idx = utils.get_path_sets(range(len(q_list)))
-    num_paths = len(path_sets_idx)
-    return probas, num_paths, path_sets_idx
 
-def print_proba_results(r):
-    runtime, res_schedule, path_time, run_time, query_time = r
-    print("runtime : ", runtime)
-    print("schedule : ", res_schedule)
-    print()
-    print("path time : ", path_time)
-    print("runtime each batch: ", run_time)
-    print("query time : ", query_time)
 
 def model_to_solution(solver, R, variables, q_list, precision, name_queries=True, proba_variables=None, split=False):
     (V, I, X, k, t_ind, A, remain) = variables
@@ -202,59 +190,3 @@ def compute_result(q_list, res, C, R, precision, name_queries=True, C_=None, spl
     return process_time, model_to_solution(*x, name_queries=name_queries, proba_variables=proba_variables, split=split)
 
 
-def rearrange_queries_probas(q_list, q_left, q_right, proba_variables):
-    _, _, path_sets_idx = proba_variables
-    left_queries = set(q_left)
-    right_queries = set(q_right)
-    # 1. split paths : determine which belong only to left
-    left_paths = []
-    right_paths_raw = []
-    for p in path_sets_idx:
-        intersect = p.intersection(right_queries)
-        if len(intersect) == 0:
-            left_paths.append(p)
-        else:
-            right_paths_raw.append(p)
-
-    # 2. select queries appearing only in right paths
-    remain_queries = left_queries.intersection(set.union(*left_paths))
-    left_queries = left_queries.difference(remain_queries)
-    right_queries = right_queries.union(remain_queries)
-
-    # 3. redefine paths right containing queries in left
-    right_paths = []
-    for p in right_paths_raw:
-        new_p = right_queries.intersection(p)
-        right_paths.append(new_p)
-
-    # 4. redefine left and right q_list
-    q_list_left = [q_list[i] for i in sorted(left_queries)]
-    q_list_right = [q_list[i] for i in sorted(right_queries)]
-    return (q_list_left, left_paths), (q_list_right, right_paths)
-
-
-def split(q_list, res, C, precision, proba_variables=None, reg_factor=None):
-    if len(q_list) > MAX_LEN_QUERIES:
-        R = 2
-        Q = len(q_list)
-        C_ = 2 * Q
-        process_time, res_schedule = compute_result(q_list, res, C, R, C_, precision, proba_variables, reg_factor)
-        q_left, runtime_left = split([x[0] for x in res_schedule[0]], res, C, precision)
-        q_right, runtime_right = split([x[0] for x in res_schedule[1]], res, C, precision)
-
-        total_time = process_time + runtime_right + runtime_left
-        if proba_variables is None:
-            return q_left + q_right, total_time
-        else:
-            return rearrange_queries_probas(q_list, q_left, q_right, proba_variables), total_time
-    else:
-        return [q_list], 0
-
-
-def combine_results(results):
-    process_time = sum(x[0] for x in results)
-    runtime = sum(x[1] for x in results)
-    res_schedule = []
-    for r_s in [x[2] for x in results]:
-        res_schedule += r_s
-    return process_time, runtime, res_schedule
