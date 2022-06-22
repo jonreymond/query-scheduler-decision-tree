@@ -22,10 +22,14 @@ object MainTest {
   def main(args: Array[String]) {
     val numPartitions = 16
 
-    val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8")
+//    True
+//    val stream = List("q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8")
+//   stream.map(Runner.process(_))
+//    println("achieved")
 
-
-   stream.map(Runner.process(_))
+    //Test
+    val stream = List("q9", "q10", "q11")
+    stream.foreach(Runner.process(_))
     println("achieved")
 
 
