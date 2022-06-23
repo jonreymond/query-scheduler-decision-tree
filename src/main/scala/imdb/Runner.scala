@@ -110,4 +110,80 @@ object Runner {
     writer.close()
     println(queryName + " process done")
   }
+
+  /**
+   * Evaluate query runtime in parallel
+   *
+   * @param queryName1       : name of query1
+   * @param queryName2       : name of query2
+   * @param numPartitions   : number of partitions used to measure => [1, 2, 4,..., numPartitions]
+   * @param numMeasurements : number of runs
+   * @param test : process to test the query
+   */
+  def processParallel(queryName1: String,queryName2: String, numPart: Int = 64, numMeasurements: Int = 4, test: Boolean = false): Unit = {
+
+
+    var num_core_l = List(1, 2, 4, 8, 16)
+
+    var i = 1
+    var numPartitions_l : List[Int] = List()
+    while(i <= numPart){
+      numPartitions_l = numPartitions_l :+ i
+      i *= 2
+    }
+    var numMeasure = numMeasurements
+    var suffix = ""
+    if(test){
+      suffix = "_test"
+      num_core_l = List(8)
+      numPartitions_l = List(16)
+      numMeasure = 1
+    }
+
+    val writer = CSVWriter.open(new File(STORE_PATH + queryName1 + "_" + queryName2 + suffix + ".csv"))
+    writer.writeRow(List("num_cores") ++ numPartitions_l)
+
+    num_core_l.foreach { num_core =>
+
+      val conf = new SparkConf().setAppName("app").setMaster("local[" + num_core.toString + "]")
+      val sc = SparkContext.getOrCreate(conf)
+      val rdd_list = NAMES.map(load(sc, _, num_core))
+
+      val results = numPartitions_l.map{ numPartitions =>
+        rdd_list.foreach(_.repartition(numPartitions))
+        val queryHandler = new QueryHandler(rdd_list)
+        if(!test){
+          queryHandler.init_table(queryName1)
+          queryHandler.init_table(queryName2)
+        }
+
+        val measurements = (1 to numMeasure).map(_ =>
+        {
+          val start = System.nanoTime()
+          val output = parallel(queryHandler.get(queryName1)(), queryHandler.get(queryName2)())
+          val end = System.nanoTime()
+          (output, (end-start)/1000000.0)
+        })
+        val result = measurements(0)._1
+        println(queryName1 + " result : " + result._1)
+        println(queryName2 + " result : " + result._2)
+        val avg_timing = measurements.map(t => t._2).sum / numMeasure
+
+        println(queryName1 + "_" + queryName2 + "  num_core : " + num_core + " num_partitions : " + numPartitions + " ")
+        Thread.sleep(5000)
+        avg_timing
+      }
+
+      writer.writeRow(List(num_core) ++ results)
+      sc.stop()
+    }
+    writer.close()
+    println(queryName1 + "_" +queryName2 + " process done")
+  }
+
+
 }
+
+
+
+

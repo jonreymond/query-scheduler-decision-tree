@@ -27,10 +27,22 @@ object MainTest {
 //   stream.map(Runner.process(_))
 //    println("achieved")
 
-    //Test
-    val stream = List("q9", "q10", "q11")
-    stream.foreach(Runner.process(_))
+    //Test single
+//    val stream = List("q9", "q10", "q11")
+//    stream.foreach(Runner.process(_))
+//    println("achieved")
+
+    //test parallel
+    val q_list = List("q1", "q2", "q4", "q9", "q10")
+    (0 until q_list.length).foreach {
+      i =>
+        (i until q_list.length).foreach { j =>
+          Runner.processParallel(q_list(i), q_list(j))
+        }
+    }
     println("achieved")
+
+
 
 
 

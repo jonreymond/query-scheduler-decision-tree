@@ -1,7 +1,8 @@
 import cp_optimizer
 import numpy as np
+import math
 import utils
-MAX_LEN_QUERIES = 9
+MAX_LEN_QUERIES = 10
 
 
 def redefine_proba_variables(list_p):
@@ -181,7 +182,7 @@ def combine_split_results(left, right, proba_variables=None):
         return process_time, (runtime, schedule, path_time, run_time, query_time)
 
 
-def process_all(q_list, res, C, R, precision, proba_variables=None, reg_factor=None,
+def process_all(q_list, res, C, precision, proba_variables=None, reg_factor=None,
                 normal_exec=True, normal_exec_split=False, query_name=True):
 
     res_split = split(q_list, range(len(q_list)), res, C, precision,
@@ -191,10 +192,12 @@ def process_all(q_list, res, C, R, precision, proba_variables=None, reg_factor=N
     for i, sp in enumerate(res_split_var):
         if proba_variables is None:
             q_index = sp
+            R = int(math.ceil(len(q_index)/2))
             res_opti = compute_one_split(q_list, q_index, res, C, R, precision,
                                          normal_exec=normal_exec, reg_factor=reg_factor)
         else :
             q_index, split_proba_variables = sp
+            R = int(math.ceil(len(q_index)/2))
             res_opti = compute_one_split(q_list, q_index, res, C, R, precision,
                                          proba_variables=split_proba_variables,
                                          normal_exec=normal_exec, reg_factor=reg_factor)
