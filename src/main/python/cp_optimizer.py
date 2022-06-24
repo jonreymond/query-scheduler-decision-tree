@@ -43,7 +43,6 @@ def init_variables(model, T, Q, C, R, proba_variables=None):
         V_bool = {(q, r): model.NewBoolVar(f'V_bool_{q},{r}') for q in range(Q) for r in range(R)}
         index_run = {q: model.NewIntVar(0, int(R - 1), f'index_run_{q}') for q in range(Q)}
 
-        # TODO :check if can reduce range : T.min()= 0 now
         min_time = int(0)
         max_time = int(T.max() * R)
         runtime_runs = {r: model.NewIntVar(min_time, max_time, f'run_r_{r}') for r in range(R)}
@@ -121,7 +120,9 @@ def define_proba_program(model, variables, Q, R, proba_variables, normal_exec=Tr
         obj = max_runtime_path
 
     #using reg_factor
-    # obj = obj + reg_factor * sum(k[r] for r in range(R))
+    if reg_factor is not None:
+        obj = obj + reg_factor * sum(k[r] for r in range(R))
+
     return obj
 
 
@@ -133,7 +134,6 @@ def optimize(q_list, res, C, R, precision, C_=None, proba_variables=None, normal
         variables = init_variables(model, T, Q, C, R)
     else:
         variables = init_variables(model, T, Q, C, R, proba_variables=proba_variables)
-
     define_program(model, variables, T, Q, C, R, C_, proba_variables, normal_exec, reg_factor)
 
     start_time = time.time()
@@ -167,7 +167,7 @@ def model_to_solution(solver, R, variables, q_list, precision, name_queries=True
                 else:
                     run_r.append((q, q_r_val))
         if run_r:
-            if proba_variables is not None and not split:
+            if not split:
                 res_schedule.append((solver.Value(k[r])/ precision, run_r))
             else:
                 res_schedule.append(run_r)

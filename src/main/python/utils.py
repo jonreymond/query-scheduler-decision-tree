@@ -5,7 +5,7 @@ import math
 
 sys.path.append(".")
 sys.path.append("../resources/results")
-path = "../resources/results/"
+path = "../resources/results/final/"
 
 
 def load_col(filename, num_partitions, other_path=""):
@@ -69,8 +69,11 @@ def get_path_sets(q_list):
     return results[2 ** height - 1:]
 
 
-def probas_to_int(probas, num_decimals=4):
-    m = min(probas)
+def probas_to_int(probas, num_decimals=3):
+    probas_non_null = [p for p in probas if p > 0]
+    if len(probas_non_null) == 0:
+        return probas
+    m = min(probas_non_null)
     i = 1
     while (m * 10 ** i < 1):
         i += 1
@@ -110,7 +113,7 @@ def recover_init_paths(path_sets_idx, path_time, q_list=None):
     return list(zip(new_path_sets, path_time_res))
 
 
-def schedule_to_string(res_schedule, q_list):
+def schedule_to_string(res_schedule, q_list, pr=True):
     new_schedule = []
     for time_bucket, bucket in res_schedule:
         queries_idx, cores = zip(*bucket)

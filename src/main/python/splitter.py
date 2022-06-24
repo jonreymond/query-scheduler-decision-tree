@@ -104,16 +104,6 @@ def split(q_list_tot, q_index, res, C, precision, proba_variables=None, normal_e
 
 def compute_new_schedule(q_index, res_schedule):
     new_schedule = []
-    for batch in res_schedule:
-        res_queries, cores = zip(*batch)
-        new_res_queries = [q_index[q] for q in res_queries]
-        new_batch = list(zip(new_res_queries, cores))
-        new_schedule.append(new_batch)
-    return new_schedule
-
-
-def compute_new_schedule_proba(q_index, res_schedule):
-    new_schedule = []
     for time_batch, batch in res_schedule:
         res_queries, cores = zip(*batch)
         new_res_queries = [q_index[q] for q in res_queries]
@@ -144,7 +134,7 @@ def compute_one_split(q_list_tot, q_index, res, C, R, precision, proba_variables
 
     else:
         runtime, res_schedule, path_time, run_time, query_time = x
-        new_schedule = compute_new_schedule_proba(q_index, res_schedule)
+        new_schedule = compute_new_schedule(q_index, res_schedule)
         new_path_time = compute_new_path(q_index, path_time)
         return process_time, (runtime, new_schedule, new_path_time, run_time, query_time)
 
@@ -187,16 +177,20 @@ def process_all(q_list, res, C, precision, proba_variables=None, reg_factor=None
 
     res_split = split(q_list, range(len(q_list)), res, C, precision,
                       proba_variables=proba_variables, reg_factor=reg_factor, normal_exec=normal_exec_split)
+    print("Split done, computing solution for each split...")
     _, res_split_var = res_split
     final_res = None
     for i, sp in enumerate(res_split_var):
+
         if proba_variables is None:
             q_index = sp
+            print("processing split ", i + 1, "/", len(res_split_var), "with length", len(q_index))
             R = int(math.ceil(len(q_index)/2))
             res_opti = compute_one_split(q_list, q_index, res, C, R, precision,
                                          normal_exec=normal_exec, reg_factor=reg_factor)
         else :
             q_index, split_proba_variables = sp
+            print("processing split ", i + 1, "/", len(res_split_var), "with length", len(q_index))
             R = int(math.ceil(len(q_index)/2))
             res_opti = compute_one_split(q_list, q_index, res, C, R, precision,
                                          proba_variables=split_proba_variables,
@@ -206,7 +200,11 @@ def process_all(q_list, res, C, precision, proba_variables=None, reg_factor=None
 
     # See if time to change
     if proba_variables is None :
-        return final_res
+        process_time, (runtime, res_schedule) = final_res
+        new_res_schedule = res_schedule
+        if query_name :
+            new_res_schedule = utils.schedule_to_string(res_schedule, q_list, pr=False)
+        return process_time, (runtime, new_res_schedule)
     else:
         _, _, path_sets_idx = proba_variables
         process_time, final = final_res
