@@ -21,3 +21,7 @@ The project is organized as follow :
   - cp_visualizer : visualizations of the results of the CP execution
   
 - src/main/resources : location of the data set
+- 
+## 📄 Documentation
+- [Final Report (PDF)](docs/report.pdf)
+- [Presentation Slides (PDF)](docs/presentation.pdf)
