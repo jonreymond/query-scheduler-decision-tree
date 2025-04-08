@@ -1,7 +1,7 @@
 # Query Scheduler for decision trees
 
 ## Content
-
+This project aims to **build, optimize, and evaluate a query scheduling system for decision trees**. It focuses on optimizing the execution of SQL queries—such as those run on large-scale datasets like IMDB—by modeling query success probabilities and dependencies through decision trees. The backend leverages Apache Spark for data processing and integrates optimization techniques including **Constraint Programming (CP)** and **Mixed-Integer Linear Programming (MILP)** to determine efficient query execution orders. A key goal is to minimize overall runtime while taking advantage of parallel execution and computational resources.
 ## Project structure
 The project is organized as follow :
 - src/main/scala/imdb : code used to load the data set and evaluate the running time of the queries
@@ -21,7 +21,3 @@ The project is organized as follow :
   - cp_visualizer : visualizations of the results of the CP execution
   
 - src/main/resources : location of the data set
-
-
-
-## Installation
